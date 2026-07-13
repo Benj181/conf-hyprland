@@ -47,6 +47,16 @@ nvim
 
 Let lazy.nvim install plugins on first run, ignore any errors and restart once it finishes.
 
+## Move undecorated windows
+
+`hide_window_decorations` in `kitty.conf` removes the titlebar, so dragging to move the window needs a modifier key instead. GNOME defaults to Super, switch it to Alt if your keyboard doesn't have a usable Super key:
+
+```shell
+gsettings set org.gnome.desktop.wm.preferences mouse-button-modifier '<Alt>'
+```
+
+Then hold Alt and drag anywhere inside the window to move it. This is a GNOME setting, not part of this repo, so it only needs doing once per machine.
+
 ## Update Catppuccin theme
 
 ```shell
