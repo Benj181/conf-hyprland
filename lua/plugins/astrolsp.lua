@@ -37,17 +37,11 @@ return {
     },
     -- enable servers that you already have installed without mason
     servers = {
-      "lua_ls",
-      "tombi",
       -- "pyright"
     },
     -- customize language server configuration passed to `vim.lsp.config`
     -- client specific configuration can also go in `lsp/` in your configuration root (see `:h lsp-config`)
-    config = {
-      lua_ls = {
-        cmd = { "C:\\Users\\benja\\tools\\lua-language-server\\bin\\lua-language-server.exe" },
-      },
-    },
+
     -- customize how language servers are attached
     handlers = {
       -- a function with the key `*` modifies the default handler, functions takes the server name as the parameter
