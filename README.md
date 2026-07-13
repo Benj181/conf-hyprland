@@ -47,15 +47,29 @@ nvim
 
 Let lazy.nvim install plugins on first run, ignore any errors and restart once it finishes.
 
-## Move undecorated windows
+## Move and resize undecorated windows
 
-`hide_window_decorations` in `kitty.conf` removes the titlebar, so dragging to move the window needs a modifier key instead. GNOME defaults to Super, switch it to Alt if your keyboard doesn't have a usable Super key:
+`hide_window_decorations` in `kitty.conf` removes the titlebar, so moving and resizing need a modifier key instead of dragging a border. These are GNOME settings, not part of this repo, so they only need doing once per machine.
+
+Switch the move/resize modifier to Alt, useful if your keyboard doesn't have a usable Super key:
 
 ```shell
 gsettings set org.gnome.desktop.wm.preferences mouse-button-modifier '<Alt>'
 ```
 
-Then hold Alt and drag anywhere inside the window to move it. This is a GNOME setting, not part of this repo, so it only needs doing once per machine.
+By default GNOME uses modifier + right-click for the window menu rather than resize. Flip that so right-click drags to resize instead:
+
+```shell
+gsettings set org.gnome.desktop.wm.preferences resize-with-right-button true
+```
+
+With both set:
+
+- Alt + left-click drag anywhere in the window: move
+- Alt + right-click drag anywhere in the window: resize
+- Alt + middle-click: window menu
+
+`hide_window_decorations titlebar-only` is a macOS-only option, it does nothing on Linux, so it's not worth setting here.
 
 ## Update Catppuccin theme
 
