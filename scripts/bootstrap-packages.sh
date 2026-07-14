@@ -21,7 +21,7 @@ sudo apt install -y \
     rofi \
     kitty \
     dolphin \
-    swaync \
+    mako-notifier \
     hyprpaper \
     wl-clipboard \
     cliphist \
@@ -34,9 +34,13 @@ sudo apt install -y \
 
 case "$PROFILE" in
     nvidia-desktop)
-        echo "==> Installing NVIDIA-specific packages"
-        # Adjust package name to your target driver version, e.g. nvidia-driver-570
-        sudo apt install -y nvidia-driver-570 libnvidia-egl-wayland1
+        echo "==> Detecting and installing recommended NVIDIA driver"
+        sudo apt install -y ubuntu-drivers-common
+        ubuntu-drivers devices          # shows what it detected/recommends, for your reference
+        sudo ubuntu-drivers autoinstall
+        # libnvidia-egl-wayland1 is pulled in automatically by driver 555+; only needed
+        # manually on older branches. Harmless to install explicitly either way:
+        sudo apt install -y libnvidia-egl-wayland1
         echo "NOTE: reboot required after NVIDIA driver install."
         echo "NOTE: also confirm nvidia-drm.modeset=1 is set (see README)."
         ;;

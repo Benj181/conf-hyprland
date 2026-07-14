@@ -96,5 +96,5 @@ installed. Ask if/when this applies and it's worth its own machine profile.
 
 ```bash
 cd ~/hyprland-dotfiles
-stow -D -t "$HOME" hypr waybar rofi
+stow -D -t "$HOME" hypr waybar rofi mako
 ```

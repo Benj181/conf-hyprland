@@ -33,10 +33,11 @@ if [[ ! -f "hypr/.config/hypr/machine/${PROFILE}.conf" ]]; then
     exit 1
 fi
 
-echo "==> Stowing dotfile packages (hypr, waybar, rofi)"
+echo "==> Stowing dotfile packages (hypr, waybar, rofi, mako)"
 stow -v -t "$HOME" hypr
 stow -v -t "$HOME" waybar
 stow -v -t "$HOME" rofi
+stow -v -t "$HOME" mako
 
 echo "==> Linking machine.conf -> machine/${PROFILE}.conf"
 ln -sf "machine/${PROFILE}.conf" "$HOME/.config/hypr/machine.conf"
