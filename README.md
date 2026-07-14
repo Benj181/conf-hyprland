@@ -34,7 +34,7 @@ new file under `machine/`.
 ## Bringing up a brand-new machine
 
 ```bash
-git clone <this-repo-url> ~/hyprland-dotfiles
+git clone git@github.com:Benj181/conf-hyprland.git ~/hyprland-dotfiles
 cd ~/hyprland-dotfiles
 
 # 1. Install packages (adjust driver version in the script if needed)
