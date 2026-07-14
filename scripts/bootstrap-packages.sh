@@ -36,13 +36,13 @@ case "$PROFILE" in
     nvidia-desktop)
         echo "==> Detecting and installing recommended NVIDIA driver"
         sudo apt install -y ubuntu-drivers-common
-        ubuntu-drivers devices          # shows what it detected/recommends, for your reference
-        sudo ubuntu-drivers autoinstall
-        # libnvidia-egl-wayland1 is pulled in automatically by driver 555+; only needed
-        # manually on older branches. Harmless to install explicitly either way:
+        ubuntu-drivers devices
+        sudo ubuntu-drivers install
         sudo apt install -y libnvidia-egl-wayland1
         echo "NOTE: reboot required after NVIDIA driver install."
         echo "NOTE: also confirm nvidia-drm.modeset=1 is set (see README)."
+        echo "NOTE: Blackwell-generation cards (RTX 50-series) require the -open driver"
+        echo "      variant -- 'ubuntu-drivers install' already accounts for this."
         ;;
     laptop-igpu)
         echo "==> Installing Mesa / power-management packages"
