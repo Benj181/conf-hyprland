@@ -1,0 +1,8 @@
+configuration {
+    modi: "drun,run,window";
+    show-icons: true;
+    font: "JetBrainsMono Nerd Font 11";
+    display-drun: "Apps";
+}
+
+@theme "/usr/share/rofi/themes/catppuccin-mocha.rasi"
