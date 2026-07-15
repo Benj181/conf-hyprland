@@ -118,6 +118,39 @@ silently falls back and icons render as tofu boxes.
 - `fonts-firacode` from apt provides **"Fira Code"** — no Nerd glyphs. It is
   not a substitute and is deliberately not installed.
 
+### Icons
+
+Nerd Font icons are written as **escapes, never as literal glyphs**: `\uXXXX`
+in the waybar JSON (regenerate with `json.dump(..., ensure_ascii=True)`) and
+`printf '\uXXXX'` in `powermenu.sh`. Both files are pure ASCII and should stay
+that way. Three separate bugs here came from pasted Private Use Area
+characters silently becoming nothing:
+
+- waybar's `pulseaudio` and `battery` icons sat in this repo as **empty
+  strings** (`["","",""]`), which is why those icons were invisible.
+- `powermenu.sh` first shipped with all five menu entries blank.
+- The cpu icon came out as U+F075B (a crossed-out music note) instead of the
+  intended U+F035B (a chip).
+
+Two traps when picking a codepoint:
+
+- **Existing is not the same as correct.** U+F035B and U+F075B both exist in
+  the font; only one is a chip. Checking `fc-list :charset=...` proves nothing
+  about which glyph you get. Render it and look:
+
+  ```bash
+  magick -background '#1e1e2e' -fill '#cdd6f4' \
+    -font ~/.local/share/fonts/NerdFonts/FiraCodeNerdFont-Regular.ttf \
+    -pointsize 30 label:"$(printf '\U000f035b')" /tmp/check.png
+  ```
+
+- **`\u` takes exactly 4 hex digits.** For codepoints above U+FFFF use `\U`
+  with 8: `printf '\uf035b'` yields U+F035 followed by a literal `b`, not
+  U+F035B. The icons in `powermenu.sh` are all BMP, so `\u` is right there.
+
+Icon choice is font-specific too: hyprsimple's memory icon (U+F0F86) renders as
+a vague swirl in FiraCode, so this config uses U+F1C0 instead.
+
 ## Neovim
 
 `install.sh` installs Neovim and syncs plugins headlessly.
