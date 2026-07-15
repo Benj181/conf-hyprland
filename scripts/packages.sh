@@ -100,11 +100,11 @@ login=(
 # Nerd glyphs, which is not what any config here asks for. Same trap as
 # Ubuntu's fonts-firacode, different spelling.
 theming=(
-    ttf-firacode-nerd            # 3.4.0 -- the exact release install-fonts.sh
-                                 # used to download. Lands in /usr/share/fonts,
-                                 # which the greeter can read, so the old
-                                 # copy-the-font-somewhere-readable step in
-                                 # install-greeter.sh is gone with it.
+    ttf-firacode-nerd            # 3.4.0 -- the same Nerd Fonts release this
+                                 # repo used to unzip by hand. Lands in
+                                 # /usr/share/fonts, which the greeter can
+                                 # read, so install-greeter.sh no longer has to
+                                 # copy the font somewhere readable either.
     papirus-icon-theme
     gnome-themes-extra           # Provides Adwaita-dark, which
                                  # theme/.config/gtk-3.0/settings.ini names. It
@@ -132,9 +132,10 @@ theming=(
 
 # Neovim toolchain.
 #
-# neovim itself is now just a package: extra has 0.12.4, the exact version the
-# old scripts/install-neovim.sh fetched as a tarball into /opt/nvim. That
-# script, its version pin and its PATH-shadowing warning are all gone.
+# neovim itself is now just a package: extra has 0.12.4, which is exactly what
+# this config targets and exactly what this repo used to fetch as a tarball
+# into /opt/nvim because apt only had 0.11.6. The tarball, the version pin and
+# the PATH-shadowing warning it needed are all gone.
 nvim=(
     neovim
     ripgrep
@@ -190,12 +191,13 @@ sudo systemctl enable --now bluetooth.service
 # ---------------------------------------------------------------------------
 # Prove the font landed, rather than assuming the package did what it says.
 #
-# This check used to live in scripts/install-fonts.sh, which downloaded
-# FiraCode.zip because apt's fonts-firacode was the wrong font entirely (no
-# Nerd glyphs -- bar icons rendered as tofu). ttf-firacode-nerd is that same
-# v3.4.0 release, so the download is gone. The check is not: a font GTK cannot
-# find does not error, it silently falls back, and that is the bug this whole
-# repo keeps tripping over.
+# This repo used to download FiraCode.zip itself, because apt's fonts-firacode
+# was the wrong font entirely -- no Nerd glyphs, so bar icons rendered as tofu.
+# ttf-firacode-nerd is that same v3.4.0 release, so the download is gone. The
+# check is not: a font GTK cannot find does not error, it silently falls back,
+# and that is the bug this whole repo keeps tripping over. A package being
+# installed is not the same claim as the family being findable under the name
+# the configs use.
 #
 # Exact family match: "FiraCode Nerd Font" is a substring of "FiraCode Nerd
 # Font Mono", so a plain substring grep would report success while the
