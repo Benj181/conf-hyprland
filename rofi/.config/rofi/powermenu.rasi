@@ -1,0 +1,112 @@
+// ~/.config/rofi/powermenu.rasi
+// Theme for powermenu.sh. Shares the vendored Catppuccin palette with
+// config.rasi so the power menu and the launcher match.
+//
+// Note this file must style every element state explicitly, for the same
+// reason config.rasi does: rofi loads its built-in default theme first, and
+// that theme sets `background: rgba(253,246,227)` (Solarized light) on
+// element normal.normal. Anything left unstyled renders cream on a dark theme.
+
+@import "catppuccin-mocha"
+
+* {
+    background-color: transparent;
+    text-color:       @text;
+    margin:           0;
+    padding:          0;
+    spacing:          0;
+}
+
+window {
+    width:            340px;
+    location:         center;
+    anchor:           center;
+    border-radius:    12px;
+    border:           2px;
+    border-color:     @mauve;
+    background-color: @base;
+    padding:          16px;
+}
+
+mainbox {
+    children: [ "inputbar", "message", "listview" ];
+    spacing:  12px;
+}
+
+// The prompt (user@host) acts as the title. The entry is hidden because this
+// is a pick-one menu, not a search: rofi still filters on keypress, and the
+// keybinds below make single letters select directly.
+inputbar {
+    children:         [ "prompt" ];
+    background-color: @surface0;
+    border-radius:    8px;
+    padding:          8px 12px;
+}
+
+prompt {
+    text-color: @mauve;
+}
+
+message {
+    background-color: @surface0;
+    border-radius:    8px;
+    padding:          6px 12px;
+}
+
+textbox {
+    text-color: @subtext0;
+    font:       "FiraCode Nerd Font 10";
+}
+
+listview {
+    lines:        5;
+    columns:      1;
+    fixed-height: true;
+    scrollbar:    false;
+    spacing:      4px;
+}
+
+element {
+    padding:       10px 12px;
+    border-radius: 8px;
+    spacing:       10px;
+}
+
+element normal.normal,
+element alternate.normal {
+    background-color: transparent;
+    text-color:       @text;
+}
+
+element normal.urgent,
+element alternate.urgent {
+    background-color: transparent;
+    text-color:       @red;
+}
+
+element normal.active,
+element alternate.active {
+    background-color: transparent;
+    text-color:       @blue;
+}
+
+element selected.normal {
+    background-color: @blue;
+    text-color:       @base;
+}
+
+element selected.urgent {
+    background-color: @red;
+    text-color:       @base;
+}
+
+element selected.active {
+    background-color: @mauve;
+    text-color:       @base;
+}
+
+element-text {
+    vertical-align: 0.5;
+    text-color:     inherit;
+    cursor:         inherit;
+}

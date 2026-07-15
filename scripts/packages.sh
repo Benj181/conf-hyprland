@@ -24,7 +24,6 @@ sudo apt-get install -y \
     rofi \
     kitty \
     mako-notifier \
-    wlogout \
     nautilus \
     wl-clipboard \
     cliphist \
@@ -32,6 +31,8 @@ sudo apt-get install -y \
     wireplumber \
     pavucontrol \
     network-manager-gnome \
+    blueman \
+    btop \
     grim \
     slurp \
     jq \

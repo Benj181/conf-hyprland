@@ -57,39 +57,89 @@ window#waybar {
     color: #cdd6f4;
 }
 
-#pulseaudio,
+#cpu,
+#memory,
+#bluetooth,
 #network,
-#battery,
-#tray {
+#pulseaudio,
+#pulseaudio.microphone,
+#tray,
+#custom-lock,
+#custom-power {
     padding: 0 10px;
     margin: 4px 2px;
     border-radius: 8px;
 }
 
-#pulseaudio {
-    color: #f9e2af;
+/* One accent per module, so they stay distinguishable at a glance now that
+ * there are nine of them rather than four. */
+#cpu {
+    color: #89b4fa;
+}
+
+#memory {
+    color: #cba6f7;
+}
+
+#memory.warning {
+    color: #fab387;
+}
+
+#memory.critical {
+    color: #f38ba8;
+    background: rgba(243, 139, 168, 0.15);
+}
+
+#bluetooth {
+    color: #89dceb;
+}
+
+#bluetooth.off,
+#bluetooth.disabled {
+    color: #6c7086;
 }
 
 #network {
     color: #94e2d5;
 }
 
-#battery {
-    color: #a6e3a1;
-}
-
-#battery.warning {
-    color: #fab387;
-}
-
-#battery.critical {
+#network.disconnected {
     color: #f38ba8;
+}
+
+#pulseaudio {
+    color: #f9e2af;
 }
 
 #pulseaudio.muted {
     color: #6c7086;
 }
 
-#network.disconnected {
+#pulseaudio.microphone {
+    color: #f2cdcd;
+}
+
+#pulseaudio.microphone.source-muted {
+    color: #6c7086;
+}
+
+#custom-lock {
+    color: #a6adc8;
+}
+
+#custom-power {
     color: #f38ba8;
+    margin-right: 4px;
+}
+
+/* These two are actions rather than readouts, so give them a hover affordance
+ * the passive modules do not need. */
+#custom-lock:hover {
+    background: #313244;
+    color: #cdd6f4;
+}
+
+#custom-power:hover {
+    background: #f38ba8;
+    color: #1e1e2e;
 }

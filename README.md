@@ -35,13 +35,12 @@ Each top-level directory is a stow package: its contents mirror `$HOME`, so
 ├── scripts/            # install steps, each idempotent and re-runnable
 ├── hypr/               # compositor: entry point + modules
 ├── waybar/             # status bar
-├── rofi/               # launcher (+ vendored Catppuccin palette)
+├── rofi/               # launcher, power menu (+ vendored Catppuccin palette)
 ├── mako/               # notifications
 ├── kitty/              # terminal (+ vendored Catppuccin theme)
 ├── nvim/               # AstroNvim config
 ├── hyprlock/           # lock screen
 ├── hypridle/           # idle handling
-├── wlogout/            # power menu
 ├── theme/              # GTK3/GTK4/Qt colours
 └── wallpapers/         # referenced by absolute path, not stowed
 ```
@@ -83,9 +82,18 @@ Everything is Catppuccin **Mocha**, and themes are vendored rather than pulled
 from distro paths or third-party repos at install time:
 
 - **Rofi** — the palette lives in `rofi/.config/rofi/catppuccin-mocha.rasi`
-  and the layout is ours. Do *not* point `@theme` at
-  `/usr/share/rofi/themes/`; Ubuntu's rofi ships no Catppuccin, so that
-  silently falls back to the stock theme.
+  and the layouts (`config.rasi` for the launcher, `powermenu.rasi` for the
+  power menu) are ours. Do *not* point `@theme` at `/usr/share/rofi/themes/`;
+  Ubuntu's rofi ships no Catppuccin, so that silently falls back to the stock
+  theme. Note both layouts style **every** element state explicitly — rofi
+  loads its built-in default theme first, which sets a Solarized-light
+  background on `element normal.normal`, so any state left unstyled renders
+  cream on the dark theme.
+- **Power menu** — `rofi/.config/rofi/powermenu.sh`, not wlogout. This is what
+  hyprsimple actually does (its `custom/power` calls a rofi script; the wlogout
+  config in that repo is vestigial), and it's why the menu is a small centred
+  panel rather than a fullscreen overlay. It reuses the same palette as the
+  launcher, so the two match by construction.
 - **kitty** — `kitty/.config/kitty/mocha.conf`, included relatively.
 - **GTK4/libadwaita** — apps like Nautilus ignore `gtk-theme-name` entirely, so
   `theme/.config/gtk-4.0/gtk.css` overrides libadwaita's named colours instead.
@@ -141,5 +149,5 @@ RTX 5070 Ti (Blackwell), driver 595 open modules, two LG UltraGears at
 
 ```bash
 cd ~/hyprland-dotfiles
-stow -D -t "$HOME" hypr waybar rofi mako kitty nvim hyprlock hypridle wlogout theme
+stow -D -t "$HOME" hypr waybar rofi mako kitty nvim hyprlock hypridle theme
 ```
