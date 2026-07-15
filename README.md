@@ -3,13 +3,13 @@
 </h3>
 
 <p align="center">
-	A complete, reproducible Hyprland rice for Ubuntu.<br/>
+	A complete, reproducible Hyprland rice for Arch Linux.<br/>
 	One clone, one command.
 </p>
 
 <p align="center">
 	<img src="https://img.shields.io/badge/Hyprland-0.53-cba6f7?style=for-the-badge&labelColor=1e1e2e&logo=hyprland&logoColor=cba6f7"/>
-	<img src="https://img.shields.io/badge/Ubuntu-26.04-89b4fa?style=for-the-badge&labelColor=1e1e2e&logo=ubuntu&logoColor=89b4fa"/>
+	<img src="https://img.shields.io/badge/Arch-Linux-89b4fa?style=for-the-badge&labelColor=1e1e2e&logo=archlinux&logoColor=89b4fa"/>
 	<img src="https://img.shields.io/badge/Catppuccin-Mocha-f5c2e7?style=for-the-badge&labelColor=1e1e2e"/>
 	<img src="https://img.shields.io/badge/GNU-Stow-a6e3a1?style=for-the-badge&labelColor=1e1e2e&logo=gnu&logoColor=a6e3a1"/>
 </p>
@@ -59,6 +59,7 @@
 | **Lock / idle** | hyprlock, hypridle |
 | **Wallpaper** | hyprpaper |
 | **File manager** | Nautilus |
+| **Login** | greetd + nwg-hello |
 | **Theme** | Catppuccin Mocha, everywhere |
 
 ## Install
@@ -69,18 +70,32 @@ cd ~/hyprland-dotfiles
 ./install.sh
 ```
 
-That's the whole thing — apt packages, NVIDIA driver, Neovim, Nerd Fonts,
-theming, and every config symlinked into place with GNU Stow. Then log out and
-pick Hyprland at the display manager. Reboot first if the NVIDIA driver was
-installed or upgraded.
+That's the whole thing — pacman packages, NVIDIA driver, Neovim, Nerd Fonts,
+theming, the login screen, and every config symlinked into place with GNU Stow.
+Then reboot: the greeter and, if the kernel or NVIDIA driver moved, the driver
+both need it.
 
 ```bash
 ./install.sh --dry-run        # report what would change, write nothing
-./install.sh --skip-packages  # configs only, skips apt/fonts/nvim/themes
+./install.sh --skip-packages  # configs only, skips pacman/AUR/themes/nvim
+./install.sh --skip-greeter   # everything except the display manager switch
 ```
+
+`--dry-run` is worth more than a stow rehearsal here: the AUR and greeter steps
+do all their checking with reads, so a dry run actually runs those checks.
 
 Anything already in the way (say, a config from a previous setup) is moved to
 `~/.dotfiles-backup-<timestamp>/` rather than overwritten.
+
+> [!IMPORTANT]
+> **`pacman -Sy <pkg>` is a partial upgrade and breaks Arch systems.** It
+> refreshes the databases, then installs a package built against libraries the
+> rest of the system hasn't caught up to. There's no apt analogue — `apt update
+> && apt install` is fine, this isn't. So `scripts/packages.sh` puts everything
+> in one `pacman -Syu --needed` transaction rather than installing group by
+> group. On a fresh install that upgrade is nearly free; on a re-run months
+> later it can pull a kernel, and then you reboot before expecting the NVIDIA
+> modules to load. `paru -Sy` is the same footgun.
 
 > [!NOTE]
 > This targets one machine (`europa`) on purpose — there is no hardware
@@ -154,14 +169,23 @@ from distro paths or third-party repos at install time.
 The palette lives in `rofi/.config/rofi/catppuccin-mocha.rasi`; the layouts
 (`config.rasi` for the launcher, `powermenu.rasi` for the power menu) are ours.
 
-Do *not* point `@theme` at `/usr/share/rofi/themes/` — Ubuntu's rofi ships no
-Catppuccin, so that silently falls back to the stock theme.
+Do *not* point `@theme` at `/usr/share/rofi/themes/`. Arch's rofi does ship
+themes there, unlike Ubuntu's — which makes the rule *more* worth stating, not
+less: a distro theme path is not yours, its contents change under you, and when
+the name isn't found rofi falls back to stock without a word. Vendor it.
 
 Both layouts style **every** element state explicitly. Rofi loads its built-in
 default theme first, which sets `background: rgba(253,246,227,100%)`
 (Solarized light) on `element normal.normal`, and a `*` wildcard block does not
 override a selector that specific. Any state left unstyled renders cream on the
 dark theme.
+
+> [!NOTE]
+> That colour was measured on rofi **1.7** (Ubuntu). Arch ships **2.0**, which
+> is a major version and now Wayland-native. The defensive styling stays right
+> either way — but if you're checking, re-measure with `rofi -dump-theme`
+> rather than trusting the number above. A justification that quietly stopped
+> being true is the same failure as a dead selector.
 </details>
 
 <details>
@@ -239,8 +263,18 @@ Configs ask for **`FiraCode Nerd Font`** (UI) and **`FiraCode Nerd Font Mono`**
 (terminal/editor). Both names must match `fc-list : family` exactly or the app
 silently falls back and icons render as tofu boxes.
 
-- `fonts-firacode` from apt provides **"Fira Code"** — no Nerd glyphs. It is
-  not a substitute and is deliberately not installed.
+The font comes from `ttf-firacode-nerd`. `scripts/packages.sh` verifies both
+families with `fc-list` afterwards rather than trusting that the package did
+what its name says.
+
+- `ttf-fira-code` provides **"Fira Code"** — no Nerd glyphs. It is not a
+  substitute and is deliberately not installed. (Ubuntu's `fonts-firacode` was
+  the identical trap under a different name; the packaging changes, the trap
+  doesn't.)
+- The check is an **exact** match (`grep -Fx`), because `FiraCode Nerd Font` is
+  a substring of `FiraCode Nerd Font Mono` — and `ttf-firacode-nerd` ships a
+  third `Propo` family besides. A substring test would report success while the
+  family you actually need is missing.
 
 ### Icons
 
@@ -282,76 +316,105 @@ a vague swirl in FiraCode, so this config uses U+F1C0 instead.
 
 **greetd** + **nwg-hello**, styled to match hyprlock: same wallpaper, same
 Catppuccin palette, same clock and date format, same mauve rounded input
-field. `install.sh` switches the display manager from gdm3 automatically.
+field. On a minimal Arch install there is no display manager at all, so this
+installs the only one rather than replacing anything.
 
 greetd runs nwg-hello inside a throwaway Hyprland session
 (`/etc/nwg-hello/hyprland.conf`), which exits the moment you log in.
 
-**This is the one step here that can leave you without a graphical login, and
-it is the one step that could not be tested.** Verifying it needs sudo, which
-needs interactive authentication. Before rebooting:
+**This is the one step here that can leave you without a graphical login.**
+It doesn't have to be taken on faith, though — greetd can be started live from
+a TTY, and nwg-hello renders in your normal session:
 
 ```bash
-systemctl status greetd
+nwg-hello -t                    # draws the real greeter in a window, as you
+./install.sh --skip-greeter     # everything else, no display manager change
+sudo systemctl start greetd     # takes vt1; you keep your shell
+sudo systemctl stop greetd      # ...and back out
 sudo journalctl -u greetd -b
 ```
 
-Keep a TTY reachable (Ctrl+Alt+F3) the first time. gdm3 is deliberately left
-installed so rolling back is one command, not an apt transaction from a
-console:
+`install-greeter.sh` checks rather than assumes: that the CSS selectors still
+match nwg-hello's widget names, that `config.toml`'s VT matches what
+`greetd.service` keeps clear, that pacman won't clobber the config on upgrade,
+that `greeter` can actually read the font and wallpaper, and that the default
+target is `graphical.target`. If one of those fires, it is telling you
+something real — read it rather than working around it.
+
+#### The default target is the one that bites
+
+`greetd.service` is `WantedBy=graphical.target`, and a minimal Arch install
+boots to `multi-user.target`. So `systemctl enable greetd` **succeeds**,
+`systemctl is-enabled greetd` reports **`enabled`**, and greetd never starts —
+nothing ever reaches the target that wants it. Ubuntu never showed this,
+because gdm3 set the graphical target years ago.
+
+`install-greeter.sh` sets it explicitly. It's worth knowing about because it's
+this repo's favourite bug wearing a systemd costume: *config that reads as
+configured and does nothing*.
+
+#### Rolling back is the bootloader, not another greeter
+
+On Ubuntu the escape hatch was `systemctl enable --force gdm3`, because gdm3
+was still installed. **There is no second display manager here.** So:
+
+At the boot menu press `e` and append to the kernel line:
+
+```
+systemd.unit=multi-user.target
+```
+
+That boots to a TTY with greetd never started. Then:
 
 ```bash
 sudo systemctl disable greetd
-sudo systemctl enable --force gdm3
-sudo reboot
+sudo systemctl set-default multi-user.target
 ```
 
-### The apt error during install is expected
-
-`install.sh` prints this while installing greetd, and it looks worse than it
-is:
-
-```
-Failed to preset unit: File '/etc/systemd/system/display-manager.service'
-already exists and is a symlink to /lib/systemd/system/gdm3.service
-deb-systemd-helper: error: systemctl preset failed on greetd.service
-```
-
-greetd's postinst tries to claim `display-manager.service` while gdm3 still
-owns it. **Nothing is wrong**: the package still configures (`dpkg -l greetd`
-shows `ii`), and `install-greeter.sh` takes the alias afterwards with
-`systemctl enable --force greetd`. Confirm with:
-
-```bash
-readlink -f /etc/systemd/system/display-manager.service   # -> greetd.service
-systemctl is-enabled greetd gdm                           # -> enabled, disabled
-```
+Rehearse reaching that menu **before** you reboot — systemd-boot often hides it
+(`timeout 0`) and you may need to hold `Space` during POST. `Ctrl+Alt+F2` also
+still works: VT switching is kernel-level and survives a compositor holding the
+keyboard. `systemctl enable sshd` first is cheap insurance for one reboot.
 
 ### Why not ly
 
-ly was the original plan, and it does not work here for two independent
-reasons. It is **not packaged for Ubuntu 26.04** at any version, so it would
-mean carrying a Zig build in `install.sh`. More fundamentally, **ly is a TUI**
-— it draws text cells on the Linux console, so it has no images, no wallpaper,
-no blur, no rounded corners, and no custom font (it uses the kernel console
-font). "Make ly look like hyprlock" is not a hard problem, it is an impossible
-one; the closest achievable result is Catppuccin-tinted text. nwg-hello is
-GTK3, takes a real wallpaper and a real stylesheet, and is in apt.
+ly was the original plan. **ly is a TUI** — it draws text cells on the Linux
+console, so it has no images, no wallpaper, no blur, no rounded corners, and no
+custom font (it uses the kernel console font). "Make ly look like hyprlock" is
+not a hard problem, it is an impossible one; the closest achievable result is
+Catppuccin-tinted text. nwg-hello is GTK3, takes a real wallpaper and a real
+stylesheet, and is what makes matching the lock screen possible at all.
+
+This section used to carry a second reason — that ly wasn't packaged for Ubuntu
+and would mean vendoring a Zig build. **On Arch that's simply false: ly is in
+the repos.** It's retired rather than quietly left standing, because a
+justification nobody rechecks is how you end up defending a decision with an
+argument that stopped being true. The TUI reason never depended on packaging,
+and it was always the decisive one.
 
 ### Why `greeter/` is not a stow package
 
 Every other top-level directory mirrors `$HOME` and is symlinked there. The
-greeter cannot work that way: greetd runs it as the **`_greetd`** system user
-before anyone logs in, and `/home/baas` is mode **750**. `_greetd` cannot even
-traverse it. So three things have to be copied out of `$HOME` rather than
-linked into it, and `scripts/install-greeter.sh` does that:
+greeter cannot work that way: greetd runs it as the **`greeter`** system user
+before anyone logs in, and `/home/baas` is mode **750**. `greeter` cannot even
+traverse it. So two things have to be copied out of `$HOME` rather than linked
+into it, and `scripts/install-greeter.sh` does that:
 
 - the **config**, to `/etc/nwg-hello/` and `/etc/greetd/` (nwg-hello only ever
   reads `/etc/nwg-hello/`, it has no `$HOME` lookup at all);
-- the **wallpaper**, to `/usr/share/nwg-hello/wallpaper.jpg`;
-- the **font**, to `/usr/local/share/fonts/`. `FiraCode Nerd Font` lives in
-  `~/.local/share/fonts` for the session, where the greeter cannot see it —
-  and a font GTK cannot find does not error, it silently falls back.
+- the **wallpaper**, to `/usr/share/nwg-hello/wallpaper.jpg`.
+
+The **font** used to be a third copy, for the same reason — it lived in
+`~/.local/share/fonts`, where the greeter couldn't see it. `ttf-firacode-nerd`
+puts it in `/usr/share/fonts`, so there's nothing left to copy. What the copy
+was really guarding against still applies, though: a font GTK cannot find does
+not error, it silently falls back. So it's replaced by the check the copy never
+did — `install-greeter.sh` asks **`greeter`**, not you, whether it can see the
+font:
+
+```bash
+sudo -u greeter fc-list : family | grep -Fx "FiraCode Nerd Font"
+```
 
 Files under `greeter/` are the source of truth; the copies in `/etc` are build
 output. Edit the former and re-run.
@@ -416,10 +479,11 @@ overlay, i.e. what DP-3 actually renders.
   detail — blurring it at sigma 12, 20 and 32 renders indistinguishably. Only
   hyprlock's `brightness = 0.6` is visible, and GTK3 does that itself with an
   overlay layer, so there is no second pre-blurred asset to keep in sync.
-- **`_greetd` is not in the `video` group.** Debian's greetd postinst creates
-  the account but does not add it, and nwg-hello's own README calls the
-  packaging out for this. Without it the greeter cannot open a DRM device:
-  black screen at boot. `install-greeter.sh` fixes it.
+- **`greeter` may not be in the `video` group.** Without it the greeter cannot
+  open a DRM device: black screen at boot. Debian's postinst definitely didn't
+  add it; whether Arch's sysusers file does is not something to take on trust.
+  `install-greeter.sh` checks membership and only then adds it, so it's correct
+  either way — and `id greeter` tells you which it was.
 - **The centred template is generated, not vendored.** `ui.py` calls
   `builder.get_object(...)` on whatever template it is handed, so a stale
   vendored copy missing a widget added by a later nwg-hello returns `None` and
@@ -432,10 +496,10 @@ overlay, i.e. what DP-3 actually renders.
 
 `install.sh` installs Neovim and syncs plugins headlessly.
 
-Neovim comes from the **upstream tarball**, pinned, into `/opt/nvim` and
-symlinked to `/usr/local/bin/nvim` — apt only has 0.11.6, which is older than
-this config targets. If `nvim --version` disagrees with
-`scripts/install-neovim.sh`, an apt-installed `neovim` is probably shadowing it.
+Neovim is just a package: `extra/neovim` is **0.12.4**, which is what this
+config targets. It used to be an upstream tarball pinned into `/opt/nvim` and
+symlinked onto `PATH`, because apt only had 0.11.6 — on Arch that whole
+apparatus, and the PATH-shadowing problem it created, is gone.
 
 `lua/plugins/{mason,treesitter,none-ls}.lua` are still AstroNvim template
 stubs, guarded by `if true then return {} end` on line 1. Delete that line to
@@ -443,15 +507,28 @@ activate one — but do it in an interactive nvim, not the install script.
 
 ## Hardware notes (europa)
 
-RTX 5070 Ti (Blackwell), driver 595 open modules, two LG UltraGears at
-2560x1440@180 with DP-2 rotated to portrait, Endgame Gear OP1 8k mouse.
+RTX 5070 Ti (Blackwell), `nvidia-open`, two LG UltraGears at 2560x1440@180
+with DP-2 rotated to portrait, Endgame Gear OP1 8k mouse.
 
-- **Blackwell is open-kernel-module only.** `nvidia-driver-595-open` is named
-  outright in `scripts/packages.sh`; there is no proprietary variant to choose.
+- **Blackwell is open-kernel-module only.** `nvidia-open` is named outright in
+  `scripts/packages.sh`; there is no proprietary variant to choose.
+- **The driver package is coupled to the kernel.** `nvidia-open` is prebuilt
+  for the stock `linux` kernel. Change the kernel and this must change with it:
+  `linux-lts` → `nvidia-open-lts`, anything else → `nvidia-open-dkms` plus the
+  matching headers. And after any `pacman -Syu` that lands a kernel, **reboot**
+  — the running kernel's modules go away with it.
 - **`nvidia-drm.modeset=1` is not needed.** It's default-on for this driver —
   there is no such kernel parameter set here and no
   `/sys/module/nvidia_drm/parameters/modeset` knob, and Hyprland runs fine.
   Ignore older guides insisting on it.
+- **Early KMS is a different question, and it is not settled here.** The bullet
+  above is about a kernel *parameter*; early KMS is about loading the NVIDIA
+  modules from the *initramfs* (`MODULES=(nvidia nvidia_modeset nvidia_uvm
+  nvidia_drm)` in `/etc/mkinitcpio.conf`, then `mkinitcpio -P`). Ubuntu's
+  packaging handled the initramfs; Arch's does not, and missing early KMS is a
+  classic cause of a black screen *specifically at a display manager* — i.e.
+  exactly the riskiest step in this repo. Nothing here configures it. If greetd
+  comes up black while `nwg-hello -t` works fine in a session, start here.
 - **VRR is off on purpose.** Setting `__GL_VRR_ALLOWED` alone does nothing
   (`hyprctl monitors` will still say `vrr: false`); it needs Hyprland's own
   `vrr` setting, and VRR across multiple NVIDIA displays is flicker-prone.
@@ -466,6 +543,16 @@ RTX 5070 Ti (Blackwell), driver 595 open modules, two LG UltraGears at
 ```bash
 cd ~/hyprland-dotfiles
 stow -D -t "$HOME" hypr waybar rofi mako kitty btop nvim hyprlock hypridle theme
+```
+
+That unlinks the configs. It does **not** touch the login screen, which isn't a
+stow package — and unstowing while greetd is still your only display manager
+leaves you logging into a session whose config just vanished. Undo that part
+separately, and before you reboot:
+
+```bash
+sudo systemctl disable greetd
+sudo systemctl set-default multi-user.target
 ```
 
 <p align="center">
