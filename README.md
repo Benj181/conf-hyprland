@@ -54,6 +54,7 @@
 | **Launcher / power menu** | Rofi |
 | **Notifications** | mako |
 | **Terminal** | kitty |
+| **System monitor** | btop |
 | **Editor** | Neovim (AstroNvim) |
 | **Lock / idle** | hyprlock, hypridle |
 | **Wallpaper** | hyprpaper |
@@ -101,6 +102,7 @@ Each top-level directory is a stow package: its contents mirror `$HOME`, so
 ├── rofi/               # launcher, power menu (+ vendored Catppuccin palette)
 ├── mako/               # notifications
 ├── kitty/              # terminal (+ vendored Catppuccin theme)
+├── btop/               # system monitor (+ vendored Catppuccin theme)
 ├── nvim/               # AstroNvim config
 ├── hyprlock/           # lock screen
 ├── hypridle/           # idle handling
@@ -171,6 +173,25 @@ dark theme.
 vestigial and unused. It's why the menu is a small centred panel rather than a
 fullscreen overlay. It reuses the same palette as the launcher, so the two
 match by construction.
+</details>
+
+<details>
+<summary><b>btop</b> — the theme name must be bare, or you get a black box</summary>
+<br/>
+
+`color_theme` takes the **bare theme name** — not a path, not with the `.theme`
+suffix. `color_theme = "themes/catppuccin_mocha.theme"` is silently ignored:
+btop logs nothing, falls back to its built-in default, and the only symptom is
+a black background.
+
+`theme_background = False` makes btop draw the terminal's background instead of
+the theme's `main_bg`. Beware that it can *mask* the above: with the theme
+failing to load, False still yields a Catppuccin-looking background, because
+it's kitty's. If btop's colours look off, set it True to see what the theme is
+really painting.
+
+The distro package ships no Catppuccin theme, so it's vendored in
+`btop/.config/btop/themes/`.
 </details>
 
 <details>
@@ -293,7 +314,7 @@ RTX 5070 Ti (Blackwell), driver 595 open modules, two LG UltraGears at
 
 ```bash
 cd ~/hyprland-dotfiles
-stow -D -t "$HOME" hypr waybar rofi mako kitty nvim hyprlock hypridle theme
+stow -D -t "$HOME" hypr waybar rofi mako kitty btop nvim hyprlock hypridle theme
 ```
 
 <p align="center">
