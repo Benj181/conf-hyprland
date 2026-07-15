@@ -3,36 +3,56 @@
 # (greeter/etc/greetd/config.toml), not this file, or the next install
 # overwrites it.
 #
-# This file is a dpkg conffile. Replacing it means apt will prompt on greetd
-# upgrades ("keep or replace?"). That prompt is a feature, not a bug: it tells
-# you upstream changed something. Answer "keep" to preserve this config.
+# WHY config.toml AND NOT greetd.conf
 #
-# nwg-hello's README suggests /etc/greetd/greetd.conf instead, claiming greetd
-# reads it first and that it dodges upgrade clobbering. That advice is Arch-
-# specific -- pacman renames modified configs to .pacsave, silently restoring
-# the agreety text greeter. Debian/Ubuntu use conffiles and prompt instead, so
-# the workaround buys nothing here, and greetd's own man page documents only
-# config.toml. Using the documented path keeps a broken login one `apt` prompt
-# away rather than one undocumented lookup-order assumption away.
+# nwg-hello's README suggests /etc/greetd/greetd.conf instead, because greetd
+# looks for it first and a package upgrade cannot clobber a file the package
+# does not own. The concern is real but the reasoning does not survive contact
+# with how pacman actually behaves:
+#
+#   - .pacnew is written on UPGRADE, when a file in the package's `backup`
+#     array has been modified locally and the new package ships a different
+#     version. Your file is KEPT; theirs lands beside it as config.toml.pacnew.
+#     That is better than dpkg's prompt -- nothing is interactive, and pacdiff
+#     tells you later.
+#   - .pacsave is written on REMOVAL (pacman -R), not on upgrade.
+#
+# So the greeter does not get silently replaced by agreety on an upgrade, and
+# the documented path -- the only one greetd's man page describes -- is safe.
+#
+# That whole story is conditional on config.toml actually being in greetd's
+# `backup` array. If it is not, pacman overwrites this file on every greetd
+# upgrade with no warning, which is presumably where the folklore came from.
+# install-greeter.sh asserts backup-array membership rather than trusting this
+# comment; if that assert ever fires, greetd.conf is the escape hatch.
 
 [terminal]
-# greetd.service ships `Conflicts=getty@tty7.service` and `After=
-# getty@tty7.service`, so VT 7 is the one Ubuntu's packaging already keeps
-# clear. Do not change this without changing the unit too, or greetd and a
-# getty will fight over the same VT.
-vt = 7
+# The VT here and greetd.service's `Conflicts=` must name the same tty, or
+# greetd and a getty fight over it. This was vt = 7 on Ubuntu, whose packaging
+# conflicted with getty@tty7; upstream greetd, which Arch ships close to
+# unmodified, conflicts with getty@tty1.
+#
+# install-greeter.sh checks this pairing against the installed unit instead of
+# trusting the line above -- it cannot be verified anywhere but on the machine
+# itself, and guessing it wrong costs a black screen.
+vt = 1
 
 [default_session]
 # start-hyprland is Hyprland's own watchdog wrapper (/usr/bin/start-hyprland,
 # from the `hyprland` package). Everything after `--` is passed to Hyprland.
 #
 # The greeter compositor config is deliberately NOT ~/.config/hypr/hyprland.conf:
-# this runs as _greetd, which cannot read /home/baas (mode 750). See
+# this runs as `greeter`, which cannot read /home/baas (mode 750). See
 # /etc/nwg-hello/hyprland.conf.
 command = "/usr/bin/start-hyprland -- -c /etc/nwg-hello/hyprland.conf"
 
-# Debian and Ubuntu create `_greetd`, not the `greeter` user that nwg-hello's
-# upstream README hard-codes. The greetd postinst makes the account but does
-# NOT add it to `video`, which it needs to drive the GPU --
-# scripts/install-greeter.sh does that.
-user = "_greetd"
+# greetd creates this account from /usr/lib/sysusers.d/greetd.conf when the
+# package installs. nwg-hello's own source assumes this exact name -- main.py
+# and tools.py both gate on os.getenv("USER") == "greeter" -- so on Debian and
+# Ubuntu, where the account is `_greetd`, nwg-hello's --log flag was silently a
+# no-op.
+#
+# sysusers does not necessarily add it to `video`, which it needs to open a DRM
+# device; without that you get a black screen at boot.
+# scripts/install-greeter.sh checks and fixes that.
+user = "greeter"

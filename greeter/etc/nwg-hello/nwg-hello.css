@@ -27,7 +27,7 @@
  * separate pre-blurred asset is committed.
  *
  * The url() is /usr/share/nwg-hello/, not ~/hyprland-dotfiles/wallpapers/:
- * this stylesheet is read by _greetd, which cannot traverse /home/baas
+ * this stylesheet is read by `greeter`, which cannot traverse /home/baas
  * (mode 750). install-greeter.sh copies the wallpaper there. */
 window {
     background-image:
