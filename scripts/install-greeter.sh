@@ -17,11 +17,51 @@
 # copies in /etc are build output: edit the former, re-run this, never edit the
 # latter.
 #
-# Usage: install-greeter.sh <dotfiles_dir> <dry_run:0|1>
+# THE FORM IS ON ONE MONITOR ON PURPOSE
+#
+# nwg-hello.json sets "monitor_nums": [1] -- the greeter appears on DP-3 only.
+# That is not cosmetic, it is what makes the password field typable.
+#
+# main.py builds one window per monitor, and *every* window asks gtk-layer-shell
+# for keyboard-mode "exclusive". Two exclusive surfaces cannot both hold the
+# keyboard, and the loop is `for i in reversed(range(n_monitors))`, so DP-2
+# (GDK index 0) is created last and wins. Typing at DP-3 silently fed the
+# portrait screen's password field instead.
+#
+# Measured, not guessed -- each window's has_toplevel_focus() with the real
+# config:
+#
+#   default  ("monitor_nums": [])      DP-3 focus=False   DP-2 focus=True   broken
+#   "form_on_monitors": [1]            DP-3 focus=False   DP-2 focus=True   WORSE:
+#                                      the focused DP-2 window is an EmptyWindow
+#                                      with no password field at all
+#   "monitor_nums": [1]                DP-3 focus=True    (DP-2 has no surface)
+#
+# So form_on_monitors, which reads like the setting for exactly this, cannot
+# fix it: EmptyWindow sets the same exclusive keyboard mode as GreeterWindow.
+# Only having a single surface works.
+#
+# GDK monitor indices, from Gdk.Display.get_monitor(i) -- both panels report
+# the model "LG ULTRAGEAR", so geometry is the only way to tell them apart:
+#
+#   index 0 = 1440x2560+-1440+0  DP-2, portrait
+#   index 1 = 2560x1440+0+0      DP-3, landscape
+#
+# If the monitor layout changes, re-derive with:
+#   python3 -c 'import gi; gi.require_version("Gdk","3.0"); from gi.repository import Gdk
+#   d=Gdk.Display.get_default()
+#   [print(i, d.get_monitor(i).get_geometry().width, d.get_monitor(i).get_geometry().height) for i in range(d.get_n_monitors())]'
+#
+# Usage: install-greeter.sh [dotfiles_dir] [dry_run:0|1]
+#
+# Both arguments are optional so this can be re-run on its own after editing
+# greeter/, without a full install.sh (which would re-run apt):
+#
+#   ./scripts/install-greeter.sh
 
 set -euo pipefail
 
-DOTFILES_DIR="$1"
+DOTFILES_DIR="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
 DRY_RUN="${2:-0}"
 
 SRC="$DOTFILES_DIR/greeter"

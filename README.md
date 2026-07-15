@@ -230,6 +230,40 @@ linked into it, and `scripts/install-greeter.sh` does that:
 Files under `greeter/` are the source of truth; the copies in `/etc` are build
 output. Edit the former and re-run.
 
+### The form is on DP-3 only, on purpose
+
+`nwg-hello.json` sets `"monitor_nums": [1]`, so the login form appears on DP-3
+alone and DP-2 shows a matching flat background. That is not a style choice —
+**it is what makes the password field typable.**
+
+nwg-hello builds one window per monitor and *every* window asks
+gtk-layer-shell for `keyboard-mode: exclusive`. Two exclusive surfaces cannot
+both hold the keyboard, and `main.py` loops `for i in
+reversed(range(n_monitors))`, so DP-2 is created last and wins. The first
+version of this shipped with the form on both monitors, and typing at DP-3 fed
+the *portrait* screen's password field. Measured with each window's
+`has_toplevel_focus()`:
+
+| Setting | DP-3 | DP-2 | Result |
+|---|---|---|---|
+| `"monitor_nums": []` (default) | `False` | `True` | can't type at DP-3 |
+| `"form_on_monitors": [1]` | `False` | `True` | worse — focused window is an `EmptyWindow` with no field |
+| `"monitor_nums": [1]` | `True` | no surface | works |
+
+`form_on_monitors` reads like the setting for exactly this and does not fix
+it: `EmptyWindow` sets the same exclusive keyboard mode as `GreeterWindow`, so
+it still steals the keyboard, into a window that has nowhere to type.
+
+The indices are GDK's, and **both panels report the model `LG ULTRAGEAR`**, so
+geometry is the only way to tell them apart: index 0 is `1440x2560` (DP-2,
+portrait), index 1 is `2560x1440` (DP-3). If the monitors ever change, this
+number has to be re-derived — `scripts/install-greeter.sh` carries the
+one-liner.
+
+DP-2's colour is `misc:background_color = rgb(292b3f)` in
+`/etc/nwg-hello/hyprland.conf`: the wallpaper's mean composited under the CSS
+overlay, i.e. what DP-3 actually renders.
+
 ### Gotchas found the hard way
 
 - **The CSS selectors are not the glade widget ids.** nwg-hello's template

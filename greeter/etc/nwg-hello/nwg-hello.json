@@ -4,7 +4,7 @@
     "/usr/share/xsessions"
   ],
   "custom_sessions": [],
-  "monitor_nums": [],
+  "monitor_nums": [1],
   "form_on_monitors": [],
   "delay_secs": 2,
   "cmd-sleep": "systemctl suspend",
