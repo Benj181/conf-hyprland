@@ -31,14 +31,22 @@ for pkg in "${PACKAGES[@]}"; do
         # Nothing there: no conflict.
         [ -e "$target" ] || [ -L "$target" ] || continue
 
-        # Already one of ours (possibly via a folded parent directory symlink):
-        # stow will handle it.
-        if [ -L "$target" ] || [ -L "$(dirname "$target")" ]; then
-            resolved="$(readlink -f "$target" 2>/dev/null || true)"
-            case "$resolved" in
-                "$DOTFILES_DIR"/*) continue ;;
-            esac
-        fi
+        # Already one of ours -- stow will handle it. Resolve the *whole* path
+        # and compare, with no symlink precondition.
+        #
+        # This previously guarded the check with `[ -L "$target" ] || [ -L
+        # "$(dirname "$target")" ]`, which only noticed a symlink at the
+        # immediate parent. When stow folds a package into a single directory
+        # symlink (~/.config/nvim -> repo), files directly inside it were
+        # correctly skipped, but anything one level deeper (lua/plugins/*.lua)
+        # has a real directory as its parent and slipped through -- so this
+        # script moved files *through* the symlink and out of the repo.
+        # readlink -f resolves every component, so an ancestor symlink at any
+        # depth is caught.
+        resolved="$(readlink -f "$target" 2>/dev/null || true)"
+        case "$resolved" in
+            "$DOTFILES_DIR"/*) continue ;;
+        esac
 
         conflicts+=("$target")
     done < <(find "$DOTFILES_DIR/$pkg" \( -type f -o -type l \) -print0)

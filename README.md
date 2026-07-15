@@ -93,6 +93,13 @@ from distro paths or third-party repos at install time:
   2024 and wouldn't have helped here anyway.
 - **Qt** — qt6ct with a Fusion palette; `QT_QPA_PLATFORMTHEME` is set in
   `general.conf`.
+- **Wallpaper** — `hyprpaper.conf` uses **hyprpaper ≥ 0.8 block syntax**
+  (`wallpaper { monitor = ... path = ... }`). The older flat form
+  (`preload = ...` / `wallpaper = DP-3,...`) that most guides still show is
+  *silently ignored* by 0.8 — no error, just no wallpaper. Paths must be
+  absolute; `~` and `$HOME` are not expanded. If the wallpaper ever vanishes,
+  run `hyprpaper --verbose` (it logs nothing without it) and look for
+  "has no target".
 
 ### Fonts
 
