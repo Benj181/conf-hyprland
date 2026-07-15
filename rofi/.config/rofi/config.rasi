@@ -1,9 +1,11 @@
 // ~/.config/rofi/config.rasi
 //
 // The Catppuccin palette is vendored next to this file. This used to be
-// `@theme "/usr/share/rofi/themes/catppuccin-mocha.rasi"` -- a path that does
-// not exist on Ubuntu, so rofi silently fell back to its stock theme. Never
-// depend on a distro-provided theme path.
+// `@theme "/usr/share/rofi/themes/catppuccin-mocha.rasi"`, and rofi silently
+// fell back to its stock theme because nothing was there. Arch's rofi does
+// ship themes in that directory, which makes the rule more worth keeping
+// rather than less: a distro theme path is not yours, its contents change
+// under you, and a miss is silent. Never depend on one.
 //
 // catppuccin-mocha.rasi only defines colours; the layout below is ours.
 @import "catppuccin-mocha"

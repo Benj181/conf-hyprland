@@ -1,6 +1,7 @@
-/* Catppuccin Mocha. Font family must match what install-fonts.sh actually
- * installs -- this previously asked for "JetBrainsMono Nerd Font", which was
- * never installed, so waybar silently fell back and icons rendered as tofu. */
+/* Catppuccin Mocha. Font family must match what ttf-firacode-nerd actually
+ * provides -- this previously asked for "JetBrainsMono Nerd Font", which was
+ * never installed, so waybar silently fell back and icons rendered as tofu.
+ * scripts/packages.sh verifies the family names with fc-list for this reason. */
 
 * {
     font-family: "FiraCode Nerd Font";

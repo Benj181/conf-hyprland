@@ -32,10 +32,18 @@ no="$(printf '\uf00d')"        # times
 
 uptime_str="$(uptime -p 2>/dev/null | sed 's/^up //')"
 
+# ${HOSTNAME}, not $(hostname): the `hostname` binary lives in inetutils, which
+# is not part of Arch's `base`, so on a minimal install it simply is not there.
+# This is not hypothetical -- it degrades quietly rather than failing, because
+# the call sits inside the `|| true` substitution below: the prompt would just
+# read "baas@" with a command-not-found on stderr nobody reads. Bash sets
+# HOSTNAME itself and coreutils' `uname -n` is the other dependency-free
+# option; both beat depending on a package for a string the shell already has.
+
 chosen="$(printf '%s  Lock\n%s  Suspend\n%s  Logout\n%s  Reboot\n%s  Shutdown\n' \
     "$lock" "$suspend" "$logout" "$reboot" "$shutdown" \
     | rofi -dmenu \
-        -p "$(whoami)@$(hostname)" \
+        -p "$(whoami)@${HOSTNAME}" \
         -mesg "Uptime: ${uptime_str:-unknown}" \
         -theme "$THEME" \
     || true)"
