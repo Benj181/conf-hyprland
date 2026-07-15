@@ -64,6 +64,11 @@
 
 ## Install
 
+> [!NOTE]
+> Installing Arch itself first? See **[docs/arch-install.md](docs/arch-install.md)**
+> — the archinstall config and a step-by-step for this machine, including how to
+> replace Ubuntu without touching the Windows partition sharing the disk.
+
 ```bash
 git clone git@github.com:Benj181/conf-hyprland.git ~/hyprland-dotfiles
 cd ~/hyprland-dotfiles

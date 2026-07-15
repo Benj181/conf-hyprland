@@ -1,0 +1,34 @@
+{
+  "archinstall_language": "English",
+  "version": "4.4",
+
+  "disk_config": {
+    "config_type": "pre_mounted_config",
+    "mountpoint": "/mnt"
+  },
+
+  "bootloader_config": {
+    "bootloader": "Grub"
+  },
+
+  "hostname": "europa",
+  "kernels": ["linux"],
+  "ntp": true,
+  "timezone": "Europe/Oslo",
+  "swap": true,
+
+  "locale_config": {
+    "kb_layout": "no",
+    "sys_lang": "en_US.UTF-8",
+    "sys_enc": "UTF-8"
+  },
+
+  "network_config": {
+    "type": "nm"
+  },
+
+  "packages": ["git", "stow", "vim", "sudo", "os-prober"],
+
+  "services": [],
+  "custom_commands": []
+}
