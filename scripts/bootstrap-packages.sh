@@ -30,7 +30,19 @@ sudo apt install -y \
     wireplumber \
     stow \
     git \
-    fonts-jetbrains-mono
+    fonts-firacode \
+    grim \
+    slurp \
+    jq \
+    libnotify-bin \
+    pavucontrol \
+    wlogout \
+    hyprland-qtutils
+
+echo "==> Installing Hyprshot"
+sudo curl -o /usr/local/bin/hyprshot \
+    https://raw.githubusercontent.com/Gustash/Hyprshot/main/hyprshot
+sudo chmod +x /usr/local/bin/hyprshot
 
 case "$PROFILE" in
     nvidia-desktop)
