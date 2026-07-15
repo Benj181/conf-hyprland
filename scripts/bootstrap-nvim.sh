@@ -8,7 +8,7 @@
 set -euo pipefail
 
 NVIM="${NVIM_BIN:-nvim}"
-command -v "$NVIM" >/dev/null || { echo "nvim not found; run install-neovim.sh first" >&2; exit 1; }
+command -v "$NVIM" >/dev/null || { echo "nvim not found; run scripts/packages.sh first" >&2; exit 1; }
 
 [ -f "$HOME/.config/nvim/init.lua" ] || {
     echo "~/.config/nvim/init.lua missing -- stow the nvim package first" >&2

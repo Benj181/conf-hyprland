@@ -18,10 +18,38 @@ fi
 
 echo "==> Applying GTK interface settings"
 
+# ---------------------------------------------------------------------------
+# The schema has to exist before any of this means anything.
+#
+# set_key below reports "skipped (not writable)" and carries on, which is the
+# right response to one unwritable key and the wrong response to the schema not
+# being installed at all: every key would skip and the install would finish
+# green with no dark mode anywhere. Ubuntu guaranteed
+# gsettings-desktop-schemas; on Arch it is only likely-transitive, so
+# scripts/packages.sh names it outright and this refuses to pretend otherwise.
+#
+# dconf matters just as much and fails worse: without it gsettings writes to
+# the memory backend, every key reports success, and the values evaporate at
+# logout. `gsettings writable` returns true either way, so it cannot catch that
+# -- naming dconf in packages.sh is the actual fix.
+#
+# Here-string, not a pipe: `gsettings list-schemas | grep -q` under pipefail
+# returns 141 when it matches.
+# ---------------------------------------------------------------------------
+schemas="$(gsettings list-schemas 2>/dev/null || true)"
+if ! grep -Fxq org.gnome.desktop.interface <<<"$schemas"; then
+    echo "==> org.gnome.desktop.interface schema is missing." >&2
+    echo "    Every key below would silently 'skip' and you would get a green" >&2
+    echo "    install with no dark mode. Install gsettings-desktop-schemas." >&2
+    exit 1
+fi
+
 # These are org.gnome.desktop.interface keys, which GTK apps read via
 # xdg-desktop-portal regardless of desktop environment -- unlike
 # org.gnome.desktop.wm.preferences, which only Mutter reads and which does
-# nothing under Hyprland.
+# nothing under Hyprland. The portal is why xdg-desktop-portal-hyprland and
+# xdg-desktop-portal-gtk are in packages.sh: on Arch they are optdepends, so
+# unnamed they are absent and this mechanism does not exist.
 set_key() {
     local key="$1" val="$2"
     if gsettings writable org.gnome.desktop.interface "$key" >/dev/null 2>&1; then
