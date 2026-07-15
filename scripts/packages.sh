@@ -42,6 +42,18 @@ sudo apt-get install -y \
     curl \
     unzip
 
+echo "==> Installing login screen"
+# greetd is the display manager, nwg-hello the GTK3 greeter it runs inside a
+# throwaway Hyprland session. This replaces gdm3 -- see scripts/install-greeter.sh.
+#
+# ly, the TUI greeter, is not packaged for Ubuntu 26.04 and would mean carrying
+# a Zig build here; it also renders in a text console, so it could not have
+# looked like hyprlock regardless. nwg-hello draws a real wallpaper and takes
+# CSS, which is what makes matching the lock screen possible.
+sudo apt-get install -y \
+    greetd \
+    nwg-hello
+
 echo "==> Installing theming"
 # fonts-firacode is deliberately NOT installed: it provides "Fira Code" with no
 # Nerd glyphs, which is not what any config here asks for. See install-fonts.sh.
