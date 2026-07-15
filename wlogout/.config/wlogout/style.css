@@ -1,0 +1,58 @@
+/* Catppuccin Mocha power menu.
+ * Icons come from the wlogout package at /usr/share/wlogout/assets/ rather
+ * than being vendored -- they ship with the binary, so they are always
+ * present alongside it. */
+
+* {
+    background-image: none;
+    font-family: "FiraCode Nerd Font";
+    font-size: 14px;
+    transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+window {
+    background-color: rgba(30, 30, 46, 0.85);
+}
+
+button {
+    color: #cdd6f4;
+    background-color: #1e1e2e;
+    border: 2px solid #45475a;
+    border-radius: 12px;
+    margin: 8px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 25%;
+}
+
+button:focus,
+button:hover {
+    background-color: #313244;
+    border-color: #cba6f7;
+    outline-style: none;
+}
+
+#lock {
+    background-image: image(url("/usr/share/wlogout/assets/lock.svg"));
+}
+
+#logout {
+    background-image: image(url("/usr/share/wlogout/assets/logout.svg"));
+}
+
+#suspend {
+    background-image: image(url("/usr/share/wlogout/assets/suspend.svg"));
+}
+
+#reboot {
+    background-image: image(url("/usr/share/wlogout/assets/reboot.svg"));
+}
+
+#shutdown {
+    background-image: image(url("/usr/share/wlogout/assets/shutdown.svg"));
+}
+
+#shutdown:focus,
+#shutdown:hover {
+    border-color: #f38ba8;
+}
