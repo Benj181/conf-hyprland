@@ -13,9 +13,15 @@
         "clock"
     ],
     "modules-right": [
-        "pulseaudio",
+        "cpu",
+        "memory",
+        "bluetooth",
         "network",
-        "tray"
+        "pulseaudio",
+        "pulseaudio#microphone",
+        "tray",
+        "custom/lock",
+        "custom/power"
     ],
     "hyprland/workspaces": {
         "format": "{icon}",
@@ -24,6 +30,31 @@
     "clock": {
         "format": "{:%a %d %b  %H:%M}",
         "tooltip-format": "<tt><small>{calendar}</small></tt>"
+    },
+    "cpu": {
+        "interval": 5,
+        "format": "\udb80\udf5b  {usage}%",
+        "on-click": "kitty -e btop"
+    },
+    "memory": {
+        "interval": 10,
+        "format": "\uf1c0  {used:0.1f}G",
+        "states": {
+            "warning": 75,
+            "critical": 90
+        },
+        "tooltip-format": "{used:0.1f}G / {total:0.1f}G  ({percentage}%)",
+        "on-click": "kitty -e btop"
+    },
+    "bluetooth": {
+        "format": "\uf293",
+        "format-off": "\udb80\udcb2",
+        "format-disabled": "\udb80\udcb2",
+        "format-connected": "\udb80\udcb1  {num_connections}",
+        "format-no-controller": "",
+        "tooltip-format": "{controller_alias}\t{controller_address}",
+        "tooltip-format-connected": "{controller_alias}\n{device_enumerate}",
+        "on-click": "blueman-manager"
     },
     "network": {
         "format-wifi": "\uf1eb  {essid}",
@@ -41,9 +72,30 @@
                 "\uf028"
             ]
         },
-        "on-click": "pavucontrol"
+        "on-click": "pavucontrol",
+        "on-scroll-up": "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+",
+        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
+    },
+    "pulseaudio#microphone": {
+        "format": "{format_source}",
+        "format-source": "\uf130  {volume}%",
+        "format-source-muted": "\uf131  muted",
+        "on-click": "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
+        "on-scroll-up": "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SOURCE@ 5%+",
+        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-",
+        "tooltip-format": "{source_desc}"
     },
     "tray": {
         "spacing": 8
+    },
+    "custom/lock": {
+        "format": "\uf023",
+        "tooltip": false,
+        "on-click": "loginctl lock-session"
+    },
+    "custom/power": {
+        "format": "\u23fb",
+        "tooltip": false,
+        "on-click": "~/.config/rofi/powermenu.sh"
     }
 }
