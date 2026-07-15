@@ -1,100 +1,144 @@
 # hyprland-dotfiles
 
-Personal Hyprland setup, structured to be reproducible on any new machine
-(NVIDIA desktop or Intel/AMD-igpu laptop) with one command.
+Hyprland setup for **europa**, reproducible with one command. Catppuccin Mocha
+across Hyprland, Waybar, Rofi, mako, kitty, Neovim, GTK and Qt.
 
-## Structure
-
-```
-.
-├── install.sh                  # stows configs + links the right machine.conf
-├── scripts/
-│   └── bootstrap-packages.sh   # apt installs, run once on a fresh machine
-├── hypr/.config/hypr/
-│   ├── hyprland.conf           # entry point, only `source =` lines
-│   ├── general.conf            # GPU-agnostic look/feel
-│   ├── keybinds.conf           # GPU-agnostic keybinds
-│   ├── windowrules.conf        # GPU-agnostic window rules
-│   ├── autostart.conf          # GPU-agnostic autostart apps
-│   └── machine/
-│       ├── nvidia-desktop.conf # NVIDIA env vars, monitor layout, render opts
-│       └── laptop-igpu.conf    # power mgmt, monitor layout, lid switch
-├── waybar/.config/waybar/      # status bar, GPU-agnostic
-└── rofi/.config/rofi/          # launcher, GPU-agnostic
-```
-
-The split is deliberate: everything that's the same across machines lives in
-the top-level `hypr/.config/hypr/*.conf` files. Everything that differs
-(GPU env vars, monitor layout, power management) lives in `machine/*.conf`,
-and `hyprland.conf` always sources a generic `machine.conf` symlink that
-`install.sh` points at the right file. This means the bulk of the repo
-never needs to change when you add a new machine -- you only ever add a
-new file under `machine/`.
-
-## Bringing up a brand-new machine
+## Install
 
 ```bash
 git clone git@github.com:Benj181/conf-hyprland.git ~/hyprland-dotfiles
 cd ~/hyprland-dotfiles
-
-# 1. Install packages (adjust driver version in the script if needed)
-./scripts/bootstrap-packages.sh nvidia-desktop   # or: laptop-igpu
-
-# 2. Reboot if the NVIDIA driver was just installed
-sudo reboot
-
-# 3. Symlink dotfiles into place
-./install.sh nvidia-desktop                      # or: laptop-igpu
-
-# 4. Log out, pick Hyprland in your display manager, log in
+./install.sh
 ```
 
-If you omit the profile argument to `install.sh`, it tries to guess from
-`hostname` (matching on "nvidia"/"desktop" or "laptop") and otherwise asks
-interactively -- but explicit is safer, especially the first time.
+That's the whole thing — apt packages, NVIDIA driver, Neovim, Nerd Fonts,
+theming, and every config symlinked into place with GNU Stow. Then log out and
+pick Hyprland at the display manager. Reboot first if the NVIDIA driver was
+installed or upgraded.
 
-## Adding a third machine
+```bash
+./install.sh --dry-run        # report what would change, write nothing
+./install.sh --skip-packages  # configs only, skips apt/fonts/nvim/themes
+```
 
-1. Create `hypr/.config/hypr/machine/<name>.conf` with whatever's specific
-   to that box (monitor line at minimum).
-2. Add a case for it in `scripts/bootstrap-packages.sh` if it needs
-   different packages.
-3. Run `./install.sh <name>`.
+Anything already in the way (say, a config from a previous setup) is moved to
+`~/.dotfiles-backup-<timestamp>/` rather than overwritten.
 
-## NVIDIA-specific notes (desktop)
+## Structure
 
-- Requires driver **555 or newer** for explicit sync support in wlroots-based
-  compositors. Check with `nvidia-smi`.
-- On Turing (RTX 20-series) and newer, prefer the **open kernel modules**
-  (`nvidia-driver-570-open` or similar) -- noticeably fewer Wayland quirks
-  than the proprietary blob.
-- Confirm `nvidia-drm.modeset=1` is set. Check:
-  ```bash
-  cat /sys/module/nvidia_drm/parameters/modeset
-  ```
-  If it prints `N` instead of `Y`, add it as a kernel parameter:
-  ```bash
-  sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="nvidia-drm.modeset=1 /' /etc/default/grub
-  sudo update-grub
-  sudo reboot
-  ```
-- If you see cursor corruption/lag, toggle `WLR_NO_HARDWARE_CURSORS` in
-  `machine/nvidia-desktop.conf` (commented out by default -- try without it
-  first on driver 555+, since it's often no longer needed and hardware
-  cursors have lower latency when they work).
+Each top-level directory is a stow package: its contents mirror `$HOME`, so
+`hypr/.config/hypr/general.conf` is symlinked to `~/.config/hypr/general.conf`.
 
-## Laptop with hybrid graphics (Optimus)?
+```
+.
+├── install.sh          # the only command you need
+├── scripts/            # install steps, each idempotent and re-runnable
+├── hypr/               # compositor: entry point + modules
+├── waybar/             # status bar
+├── rofi/               # launcher (+ vendored Catppuccin palette)
+├── mako/               # notifications
+├── kitty/              # terminal (+ vendored Catppuccin theme)
+├── nvim/               # AstroNvim config
+├── hyprlock/           # lock screen
+├── hypridle/           # idle handling
+├── wlogout/            # power menu
+├── theme/              # GTK3/GTK4/Qt colours
+└── wallpapers/         # referenced by absolute path, not stowed
+```
 
-`laptop-igpu.conf` assumes **integrated graphics only**. If a laptop has
-both an integrated GPU and a discrete NVIDIA GPU (common on gaming
-laptops), that's a different setup entirely -- you'd want a
-`laptop-hybrid.conf` with PRIME offload env vars (`__NV_PRIME_RENDER_OFFLOAD`,
-`__GLX_VENDOR_LIBRARY_NAME`, etc.) and possibly `nvidia-prime`/`optimus-manager`
-installed. Ask if/when this applies and it's worth its own machine profile.
+`hypr/.config/hypr/hyprland.conf` is an entry point that only `source`s the
+modules beside it. **`hardware.conf` holds everything specific to this
+machine** — monitors and NVIDIA env. If a second machine ever appears, that's
+the one file that needs to differ.
 
-## Uninstalling / unstowing
+`hyprlock` and `hypridle` are separate packages that both install into
+`~/.config/hypr/`, which the `hypr` package also owns. Stow handles this by
+unfolding the directory into per-file symlinks. It's expected; just don't be
+surprised that `~/.config/hypr` is a real directory rather than a single link.
+
+## Keybinds
+
+`$mod` is SUPER.
+
+| Bind | Action |
+|---|---|
+| `$mod` + Return | kitty |
+| `$mod` + R | rofi |
+| `$mod` + E | nautilus |
+| `$mod` + Q | close window |
+| `$mod` + F | fullscreen |
+| `$mod` + V | toggle floating |
+| `$mod` + C | clipboard history |
+| `$mod` + N / `$mod`+Shift+N | dismiss / restore notification |
+| `$mod` + Shift + X | power menu |
+| `$mod` + h/j/k/l | move focus |
+| `$mod` + Shift + h/j/k/l | move window |
+| `$mod` + 1-0 | workspace |
+| `$mod` + Shift + 1-0 | move window to workspace |
+| Print / `$mod` + Print | screenshot output / region |
+
+## Theming
+
+Everything is Catppuccin **Mocha**, and themes are vendored rather than pulled
+from distro paths or third-party repos at install time:
+
+- **Rofi** — the palette lives in `rofi/.config/rofi/catppuccin-mocha.rasi`
+  and the layout is ours. Do *not* point `@theme` at
+  `/usr/share/rofi/themes/`; Ubuntu's rofi ships no Catppuccin, so that
+  silently falls back to the stock theme.
+- **kitty** — `kitty/.config/kitty/mocha.conf`, included relatively.
+- **GTK4/libadwaita** — apps like Nautilus ignore `gtk-theme-name` entirely, so
+  `theme/.config/gtk-4.0/gtk.css` overrides libadwaita's named colours instead.
+  This is also why nothing is downloaded: `catppuccin/gtk` was archived in June
+  2024 and wouldn't have helped here anyway.
+- **Qt** — qt6ct with a Fusion palette; `QT_QPA_PLATFORMTHEME` is set in
+  `general.conf`.
+
+### Fonts
+
+Configs ask for **`FiraCode Nerd Font`** (UI) and **`FiraCode Nerd Font Mono`**
+(terminal/editor). Both names must match `fc-list : family` exactly or the app
+silently falls back and icons render as tofu boxes.
+
+Two traps worth knowing, both of which previously bit this repo:
+
+- `fonts-firacode` from apt provides **"Fira Code"** — no Nerd glyphs. It is
+  not a substitute and is deliberately not installed.
+- Extracting only `"*Mono*"` from `FiraCode.zip` gives you
+  `FiraCode Nerd Font Mono` but **not** the proportional `FiraCode Nerd Font`.
+  `install-fonts.sh` extracts the whole archive and verifies both families.
+
+## Neovim
+
+AstroNvim, absorbed from the former `conf-nvim` repo (its history is preserved
+in this one). `install.sh` installs Neovim and syncs plugins headlessly.
+
+Neovim comes from the **upstream tarball**, pinned, into `/opt/nvim` and
+symlinked to `/usr/local/bin/nvim` — apt only has 0.11.6, which is older than
+this config targets. If `nvim --version` disagrees with
+`scripts/install-neovim.sh`, an apt-installed `neovim` is probably shadowing it.
+
+## Hardware notes (europa)
+
+RTX 5070 Ti (Blackwell), driver 595 open modules, two LG UltraGears at
+2560x1440@180 with DP-2 rotated to portrait.
+
+- **Blackwell is open-kernel-module only.** `nvidia-driver-595-open` is named
+  outright in `scripts/packages.sh`; there is no proprietary variant to choose.
+- **`nvidia-drm.modeset=1` is not needed.** It's default-on for this driver —
+  there is no such kernel parameter set here and no
+  `/sys/module/nvidia_drm/parameters/modeset` knob, and Hyprland runs fine.
+  Ignore older guides insisting on it.
+- **VRR is off on purpose.** Setting `__GL_VRR_ALLOWED` alone does nothing
+  (`hyprctl monitors` will still say `vrr: false`); it needs Hyprland's own
+  `vrr` setting, and VRR across multiple NVIDIA displays is flicker-prone.
+- **No battery and no backlight**, so there are no battery/brightness modules
+  or binds. External monitor brightness needs DDC/CI (`ddcutil`) if you want it.
+- **Mouse acceleration is off** via `accel_profile = flat` in `general.conf`.
+
+## Uninstall
 
 ```bash
 cd ~/hyprland-dotfiles
-stow -D -t "$HOME" hypr waybar rofi mako
+stow -D -t "$HOME" hypr waybar rofi mako kitty nvim hyprlock hypridle wlogout theme
 ```
