@@ -20,11 +20,17 @@ echo "==> Syncing lazy.nvim plugins (headless, first run takes a minute)"
     echo "    lazy sync reported errors; continuing (plugins often still install)" >&2
 }
 
-# Mason tools, only if mason-tool-installer is actually configured -- calling a
-# command that does not exist would fail the whole install.
-# if "$NVIM" --headless -c 'lua if pcall(require, "mason-tool-installer") then vim.cmd("qa") else vim.cmd("cq") end' 2>/dev/null; then
-#     echo "==> Installing Mason tools"
-#     "$NVIM" --headless "+MasonToolsInstallSync" +qa 2>&1 | sed 's/^/    /' || true
-# fi
+# No Mason step here, deliberately.
+#
+# lua/plugins/mason.lua is still the AstroNvim template stub -- its first line
+# is `if true then return {} end`, so it returns an empty spec and no
+# ensure_installed list exists to act on. (Same for treesitter.lua and
+# none-ls.lua.) There is nothing for MasonToolsInstall to install.
+#
+# If you do enable mason.lua, you still do not want it here:
+# +MasonToolsInstallSync never returns under --headless (its async jobs wait on
+# an event loop headless nvim does not pump the same way), so it hangs the
+# install rather than failing. mason-tool-installer's run_on_start already
+# installs the list on the next interactive launch anyway.
 
 echo "==> Neovim bootstrap done"
