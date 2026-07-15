@@ -72,8 +72,41 @@ element {
     spacing:       10px;
 }
 
+/* Every element state must be set explicitly. rofi always loads its built-in
+ * default theme first, and that theme defines `background: rgba(253,246,227)`
+ * -- Solarized light cream -- which `element normal.normal` inherits. The `*`
+ * block above does not win against a selector that specific, so any state left
+ * unstyled here renders with a cream background on a dark theme. */
+element normal.normal,
+element alternate.normal {
+    background-color: transparent;
+    text-color:       @text;
+}
+
+element normal.urgent,
+element alternate.urgent {
+    background-color: transparent;
+    text-color:       @red;
+}
+
+element normal.active,
+element alternate.active {
+    background-color: transparent;
+    text-color:       @blue;
+}
+
 element selected.normal {
     background-color: @blue;
+    text-color:       @base;
+}
+
+element selected.urgent {
+    background-color: @red;
+    text-color:       @base;
+}
+
+element selected.active {
+    background-color: @mauve;
     text-color:       @base;
 }
 
