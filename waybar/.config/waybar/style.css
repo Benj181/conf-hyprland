@@ -1,25 +1,95 @@
+/* Catppuccin Mocha. Font family must match what install-fonts.sh actually
+ * installs -- this previously asked for "JetBrainsMono Nerd Font", which was
+ * never installed, so waybar silently fell back and icons rendered as tofu. */
+
 * {
-    font-family: "JetBrainsMono Nerd Font";
+    font-family: "FiraCode Nerd Font";
     font-size: 13px;
     min-height: 0;
 }
 
+/* Floating pill bar: the window itself is transparent and #waybar-inner
+ * carries the rounded background, so the bar appears to hover. */
 window#waybar {
-    background: rgba(30, 30, 46, 0.85);
+    background: transparent;
     color: #cdd6f4;
+}
+
+.modules-left,
+.modules-center,
+.modules-right {
+    background: rgba(30, 30, 46, 0.85);
+    border: 1px solid rgba(69, 71, 90, 0.6);
+    border-radius: 12px;
+    padding: 0 6px;
+    margin: 6px 0;
+}
+
+#workspaces {
+    padding: 0;
 }
 
 #workspaces button {
     padding: 0 8px;
+    margin: 4px 2px;
+    color: #a6adc8;
+    border-radius: 8px;
+    transition: background 150ms ease, color 150ms ease;
+}
+
+#workspaces button:hover {
+    background: #313244;
     color: #cdd6f4;
 }
 
 #workspaces button.active {
     background: #89b4fa;
     color: #1e1e2e;
-    border-radius: 6px;
 }
 
-#clock, #battery, #network, #pulseaudio, #tray {
+#workspaces button.urgent {
+    background: #f38ba8;
+    color: #1e1e2e;
+}
+
+#clock {
+    padding: 0 12px;
+    color: #cdd6f4;
+}
+
+#pulseaudio,
+#network,
+#battery,
+#tray {
     padding: 0 10px;
+    margin: 4px 2px;
+    border-radius: 8px;
+}
+
+#pulseaudio {
+    color: #f9e2af;
+}
+
+#network {
+    color: #94e2d5;
+}
+
+#battery {
+    color: #a6e3a1;
+}
+
+#battery.warning {
+    color: #fab387;
+}
+
+#battery.critical {
+    color: #f38ba8;
+}
+
+#pulseaudio.muted {
+    color: #6c7086;
+}
+
+#network.disconnected {
+    color: #f38ba8;
 }

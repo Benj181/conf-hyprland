@@ -1,9 +1,89 @@
+// ~/.config/rofi/config.rasi
+//
+// The Catppuccin palette is vendored next to this file. This used to be
+// `@theme "/usr/share/rofi/themes/catppuccin-mocha.rasi"` -- a path that does
+// not exist on Ubuntu, so rofi silently fell back to its stock theme. Never
+// depend on a distro-provided theme path.
+//
+// catppuccin-mocha.rasi only defines colours; the layout below is ours.
+@import "catppuccin-mocha"
+
 configuration {
     modi: "drun,run,window";
     show-icons: true;
     font: "FiraCode Nerd Font 11";
     display-drun: "Apps";
+    drun-display-format: "{name}";
+    hover-select: true;
 }
 
-@theme "/usr/share/rofi/themes/catppuccin-mocha.rasi"
+* {
+    background-color: transparent;
+    text-color:       @text;
+    margin:           0;
+    padding:          0;
+    spacing:          0;
+}
 
+window {
+    width:            40%;
+    location:         center;
+    anchor:           center;
+    border-radius:    12px;
+    border:           2px;
+    border-color:     @mauve;
+    background-color: @base;
+    padding:          12px;
+}
+
+mainbox {
+    children: [ "inputbar", "listview" ];
+    spacing:  12px;
+}
+
+inputbar {
+    children:         [ "prompt", "entry" ];
+    background-color: @surface0;
+    border-radius:    8px;
+    padding:          10px 12px;
+    spacing:          10px;
+}
+
+prompt {
+    text-color: @mauve;
+}
+
+entry {
+    placeholder:       "Search";
+    placeholder-color: @overlay0;
+}
+
+listview {
+    lines:        8;
+    columns:      1;
+    fixed-height: false;
+    scrollbar:    false;
+    spacing:      4px;
+}
+
+element {
+    padding:       8px 10px;
+    border-radius: 8px;
+    spacing:       10px;
+}
+
+element selected.normal {
+    background-color: @blue;
+    text-color:       @base;
+}
+
+element-icon {
+    size:   1.2em;
+    cursor: inherit;
+}
+
+element-text {
+    vertical-align: 0.5;
+    text-color:     inherit;
+    cursor:         inherit;
+}
