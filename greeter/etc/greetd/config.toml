@@ -1,0 +1,38 @@
+# /etc/greetd/config.toml
+# Installed by scripts/install-greeter.sh -- edit the copy in the repo
+# (greeter/etc/greetd/config.toml), not this file, or the next install
+# overwrites it.
+#
+# This file is a dpkg conffile. Replacing it means apt will prompt on greetd
+# upgrades ("keep or replace?"). That prompt is a feature, not a bug: it tells
+# you upstream changed something. Answer "keep" to preserve this config.
+#
+# nwg-hello's README suggests /etc/greetd/greetd.conf instead, claiming greetd
+# reads it first and that it dodges upgrade clobbering. That advice is Arch-
+# specific -- pacman renames modified configs to .pacsave, silently restoring
+# the agreety text greeter. Debian/Ubuntu use conffiles and prompt instead, so
+# the workaround buys nothing here, and greetd's own man page documents only
+# config.toml. Using the documented path keeps a broken login one `apt` prompt
+# away rather than one undocumented lookup-order assumption away.
+
+[terminal]
+# greetd.service ships `Conflicts=getty@tty7.service` and `After=
+# getty@tty7.service`, so VT 7 is the one Ubuntu's packaging already keeps
+# clear. Do not change this without changing the unit too, or greetd and a
+# getty will fight over the same VT.
+vt = 7
+
+[default_session]
+# start-hyprland is Hyprland's own watchdog wrapper (/usr/bin/start-hyprland,
+# from the `hyprland` package). Everything after `--` is passed to Hyprland.
+#
+# The greeter compositor config is deliberately NOT ~/.config/hypr/hyprland.conf:
+# this runs as _greetd, which cannot read /home/baas (mode 750). See
+# /etc/nwg-hello/hyprland.conf.
+command = "/usr/bin/start-hyprland -- -c /etc/nwg-hello/hyprland.conf"
+
+# Debian and Ubuntu create `_greetd`, not the `greeter` user that nwg-hello's
+# upstream README hard-codes. The greetd postinst makes the account but does
+# NOT add it to `video`, which it needs to drive the GPU --
+# scripts/install-greeter.sh does that.
+user = "_greetd"

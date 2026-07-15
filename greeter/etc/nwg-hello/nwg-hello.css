@@ -1,0 +1,202 @@
+/* /etc/nwg-hello/nwg-hello.css
+ * Catppuccin Mocha login screen, matched to hyprlock.
+ *
+ * Installed by scripts/install-greeter.sh. Edit the copy in the repo
+ * (greeter/etc/nwg-hello/nwg-hello.css), not this file.
+ *
+ * SELECTOR NAMES ARE NOT THE GLADE IDs. nwg-hello's template.glade calls the
+ * clock `lbl-clock`, but GTK3 does not use a GtkBuilder id as the CSS name --
+ * verified: Gtk.Buildable.get_name() returns 'lbl-clock' while
+ * widget.get_name() returns 'GtkLabel', and a `#lbl-clock` rule matches
+ * nothing. nwg-hello renames each widget in ui.py with
+ * set_property("name", ...), and *those* names are what CSS sees. The full
+ * list, from ui.py, is:
+ *
+ *     form-wrapper  welcome-label  clock-label  date-label  form-label
+ *     form-combo    password-entry login-button power-button
+ *
+ * Anything else (#lbl-message, #cb-show-password, #avatar-wrapper) is never
+ * renamed and has no id selector -- reach those with element selectors.
+ */
+
+/* hyprlock's background block is `path` + blur_passes=3 + brightness=0.6.
+ * The blur is not reproduced here and does not need to be: the wallpaper is a
+ * smooth radial gradient with no detail, so blurring it is a visual no-op
+ * (sigma 12, 20 and 32 render indistinguishably). Only the darkening shows,
+ * and GTK3 can do that itself with an overlay layer -- which is why no
+ * separate pre-blurred asset is committed.
+ *
+ * The url() is /usr/share/nwg-hello/, not ~/hyprland-dotfiles/wallpapers/:
+ * this stylesheet is read by _greetd, which cannot traverse /home/baas
+ * (mode 750). install-greeter.sh copies the wallpaper there. */
+window {
+    background-image:
+        linear-gradient(rgba(30, 30, 46, 0.4), rgba(30, 30, 46, 0.4)),
+        url("/usr/share/nwg-hello/wallpaper.jpg");
+    background-size: cover, cover;
+    background-position: center, center;
+    color: #cdd6f4;
+    font-family: "FiraCode Nerd Font";
+}
+
+/* hyprlock floats its widgets directly on the wallpaper with no panel behind
+ * them. nwg-hello's default draws a rgba(0,0,0,0.2) card here; dropping it is
+ * most of what makes this read as the same screen. */
+#form-wrapper {
+    background-color: transparent;
+    padding: 0 24px;
+}
+
+/* hyprlock has no greeting -- it is a lock screen. A login screen reasonably
+ * does, so this is kept but pushed into the background rather than deleted. */
+#welcome-label {
+    font-size: 15px;
+    color: #6c7086;
+    margin-bottom: 4px;
+}
+
+/* hyprlock: font_size = 96, color = rgba(cdd6f4ff). The JSON's time-format
+ * (%H:%M) and date-format (%A, %d %B) are set to match hyprlock's
+ * `date +"%H:%M"` and `date +"%A, %d %B"` exactly, so the two screens show
+ * the same string in the same shape. */
+#clock-label {
+    font-family: "FiraCode Nerd Font";
+    font-size: 96px;
+    font-weight: 300;
+    color: #cdd6f4;
+    margin-bottom: 0;
+}
+
+/* hyprlock: font_size = 20, color = rgba(a6adc8ff). */
+#date-label {
+    font-size: 20px;
+    color: #a6adc8;
+    margin-bottom: 28px;
+}
+
+/* "Session", "User", "Password" -- hyprlock has no equivalent, so keep them
+ * quiet and let the input field carry the eye. */
+#form-label {
+    font-size: 13px;
+    color: #a6adc8;
+    margin-top: 6px;
+}
+
+/* hyprlock input-field: size 320x52, rounding = 10, outline_thickness = 2,
+ * outer_color = mauve, inner_color = rgba(1e1e2eee) -> 0xee/255 = 0.93. */
+#password-entry {
+    min-width: 320px;
+    min-height: 52px;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 2px solid #cba6f7;
+    background-color: rgba(30, 30, 46, 0.93);
+    background-image: none;
+    color: #cdd6f4;
+    caret-color: #cdd6f4;
+    font-family: "FiraCode Nerd Font";
+    font-size: 15px;
+}
+
+#password-entry:focus {
+    border-color: #b4befe;
+}
+
+#password-entry selection {
+    background-color: #cba6f7;
+    color: #1e1e2e;
+}
+
+/* Session and user pickers. Same shape as the password field but recessed,
+ * since they are set-once and the password is the thing you interact with. */
+#form-combo {
+    min-height: 40px;
+}
+
+#form-combo button {
+    border-radius: 10px;
+    border: 1px solid #45475a;
+    background-color: rgba(30, 30, 46, 0.75);
+    background-image: none;
+    color: #cdd6f4;
+    padding: 4px 10px;
+}
+
+#form-combo button:hover {
+    border-color: #cba6f7;
+    background-color: rgba(49, 50, 68, 0.85);
+}
+
+#form-combo window,
+#form-combo menu {
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+}
+
+/* hyprlock has no login button -- Enter submits. This exists, so make it the
+ * mauve of the input outline rather than inventing a new accent. */
+#login-button {
+    min-height: 44px;
+    margin-top: 18px;
+    border-radius: 10px;
+    border: none;
+    background-color: #cba6f7;
+    background-image: none;
+    color: #1e1e2e;
+    font-weight: bold;
+    padding: 0 24px;
+}
+
+#login-button:hover {
+    background-color: #b4befe;
+}
+
+#login-button:active {
+    background-color: #89b4fa;
+}
+
+/* The button's own `color` does not reach its text. GtkButton wraps its label
+ * in a child GtkLabel node, and any rule matching that label node beats the
+ * colour inherited from #login-button -- including `window { color: ... }`.
+ * Without this the Login text renders #cdd6f4 on #cba6f7: light-on-light and
+ * almost unreadable. Style the label node directly. */
+#login-button label {
+    color: #1e1e2e;
+}
+
+/* Sleep, reboot and power-off all share the name "power-button" -- ui.py sets
+ * the same name on all three, so they cannot be styled individually by id. */
+#power-button {
+    border: none;
+    background: none;
+    background-image: none;
+    border-radius: 10px;
+    padding: 10px;
+    margin: 24px 6px 0 6px;
+}
+
+#power-button:hover {
+    background-color: rgba(203, 166, 247, 0.18);
+}
+
+#power-button:active {
+    background-color: rgba(203, 166, 247, 0.30);
+}
+
+/* "Show password" checkbox. */
+checkbutton {
+    color: #a6adc8;
+    font-size: 13px;
+}
+
+checkbutton check {
+    border-radius: 4px;
+    border: 1px solid #45475a;
+    background-color: rgba(30, 30, 46, 0.75);
+}
+
+checkbutton check:checked {
+    background-color: #cba6f7;
+    border-color: #cba6f7;
+    color: #1e1e2e;
+}

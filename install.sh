@@ -57,6 +57,7 @@ fi
 echo "==> Stowing: ${PACKAGES[*]}"
 if [[ "$DRY_RUN" -eq 1 ]]; then
     stow -n -v -t "$HOME" "${PACKAGES[@]}" 2>&1 | sed 's/^/    /'
+    ./scripts/install-greeter.sh "$DOTFILES_DIR" 1
     echo "=== DRY RUN complete: nothing was written ==="
     exit 0
 fi
@@ -64,6 +65,9 @@ stow -v -t "$HOME" "${PACKAGES[@]}" 2>&1 | sed 's/^/    /'
 
 if [[ "$SKIP_PACKAGES" -eq 0 ]]; then
     ./scripts/install-themes.sh
+    # Not a stow package: the greeter runs as _greetd, which cannot read $HOME.
+    # Runs after install-fonts.sh because it copies that font system-wide.
+    ./scripts/install-greeter.sh "$DOTFILES_DIR" 0
     ./scripts/bootstrap-nvim.sh
 fi
 
@@ -74,3 +78,10 @@ echo "    Check for problems:    hyprctl configerrors"
 echo
 echo "    If the NVIDIA driver was installed or upgraded just now, reboot"
 echo "    before expecting Hyprland to come up cleanly."
+
+if [[ "$SKIP_PACKAGES" -eq 0 ]]; then
+    echo
+    echo "    The login screen is now greetd + nwg-hello instead of gdm3, which"
+    echo "    only takes effect on reboot. Check 'systemctl status greetd' and"
+    echo "    keep a TTY reachable the first time -- see README, Login screen."
+fi

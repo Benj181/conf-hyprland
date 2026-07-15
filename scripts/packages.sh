@@ -42,6 +42,39 @@ sudo apt-get install -y \
     curl \
     unzip
 
+echo "==> Installing login screen"
+# greetd is the display manager, nwg-hello the GTK3 greeter it runs inside a
+# throwaway Hyprland session. This replaces gdm3 -- see scripts/install-greeter.sh.
+#
+# ly, the TUI greeter, is not packaged for Ubuntu 26.04 and would mean carrying
+# a Zig build here; it also renders in a text console, so it could not have
+# looked like hyprlock regardless. nwg-hello draws a real wallpaper and takes
+# CSS, which is what makes matching the lock screen possible.
+#
+# EXPECTED NOISE: greetd's postinst runs `systemctl preset greetd.service`,
+# which tries to claim /etc/systemd/system/display-manager.service. gdm3 still
+# owns that symlink at this point, so apt prints:
+#
+#     Failed to preset unit: File '/etc/systemd/system/display-manager.service'
+#     already exists and is a symlink to /lib/systemd/system/gdm3.service
+#     deb-systemd-helper: error: systemctl preset failed on greetd.service
+#
+# This is harmless and the install is unaffected: dpkg still marks greetd `ii`
+# (configured), and install-greeter.sh takes the alias afterwards with
+# `systemctl enable --force greetd`. Verified end state: display-manager.service
+# -> greetd.service, gdm disabled, greetd enabled.
+#
+# gdm3 is deliberately NOT disabled here to silence it. That would move the
+# display-manager switch into a script whose job is installing packages, and if
+# the run then stopped before install-greeter.sh, the machine would boot into
+# greetd running its default agreety text prompt. A confusing message beats a
+# confusing login screen.
+echo "    note: an apt 'failed to preset greetd.service' error here is expected"
+echo "          and harmless -- install-greeter.sh claims the alias afterwards."
+sudo apt-get install -y \
+    greetd \
+    nwg-hello
+
 echo "==> Installing theming"
 # fonts-firacode is deliberately NOT installed: it provides "Fira Code" with no
 # Nerd glyphs, which is not what any config here asks for. See install-fonts.sh.

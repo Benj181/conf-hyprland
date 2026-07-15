@@ -107,6 +107,7 @@ Each top-level directory is a stow package: its contents mirror `$HOME`, so
 ├── hyprlock/           # lock screen
 ├── hypridle/           # idle handling
 ├── theme/              # GTK3/GTK4/Qt colours
+├── greeter/            # login screen -- copied to /etc, not stowed
 └── wallpapers/         # referenced by absolute path, not stowed
 ```
 
@@ -276,6 +277,156 @@ Two traps when picking a codepoint:
 
 Icon choice is font-specific too: hyprsimple's memory icon (U+F0F86) renders as
 a vague swirl in FiraCode, so this config uses U+F1C0 instead.
+
+## Login screen
+
+**greetd** + **nwg-hello**, styled to match hyprlock: same wallpaper, same
+Catppuccin palette, same clock and date format, same mauve rounded input
+field. `install.sh` switches the display manager from gdm3 automatically.
+
+greetd runs nwg-hello inside a throwaway Hyprland session
+(`/etc/nwg-hello/hyprland.conf`), which exits the moment you log in.
+
+**This is the one step here that can leave you without a graphical login, and
+it is the one step that could not be tested.** Verifying it needs sudo, which
+needs interactive authentication. Before rebooting:
+
+```bash
+systemctl status greetd
+sudo journalctl -u greetd -b
+```
+
+Keep a TTY reachable (Ctrl+Alt+F3) the first time. gdm3 is deliberately left
+installed so rolling back is one command, not an apt transaction from a
+console:
+
+```bash
+sudo systemctl disable greetd
+sudo systemctl enable --force gdm3
+sudo reboot
+```
+
+### The apt error during install is expected
+
+`install.sh` prints this while installing greetd, and it looks worse than it
+is:
+
+```
+Failed to preset unit: File '/etc/systemd/system/display-manager.service'
+already exists and is a symlink to /lib/systemd/system/gdm3.service
+deb-systemd-helper: error: systemctl preset failed on greetd.service
+```
+
+greetd's postinst tries to claim `display-manager.service` while gdm3 still
+owns it. **Nothing is wrong**: the package still configures (`dpkg -l greetd`
+shows `ii`), and `install-greeter.sh` takes the alias afterwards with
+`systemctl enable --force greetd`. Confirm with:
+
+```bash
+readlink -f /etc/systemd/system/display-manager.service   # -> greetd.service
+systemctl is-enabled greetd gdm                           # -> enabled, disabled
+```
+
+### Why not ly
+
+ly was the original plan, and it does not work here for two independent
+reasons. It is **not packaged for Ubuntu 26.04** at any version, so it would
+mean carrying a Zig build in `install.sh`. More fundamentally, **ly is a TUI**
+— it draws text cells on the Linux console, so it has no images, no wallpaper,
+no blur, no rounded corners, and no custom font (it uses the kernel console
+font). "Make ly look like hyprlock" is not a hard problem, it is an impossible
+one; the closest achievable result is Catppuccin-tinted text. nwg-hello is
+GTK3, takes a real wallpaper and a real stylesheet, and is in apt.
+
+### Why `greeter/` is not a stow package
+
+Every other top-level directory mirrors `$HOME` and is symlinked there. The
+greeter cannot work that way: greetd runs it as the **`_greetd`** system user
+before anyone logs in, and `/home/baas` is mode **750**. `_greetd` cannot even
+traverse it. So three things have to be copied out of `$HOME` rather than
+linked into it, and `scripts/install-greeter.sh` does that:
+
+- the **config**, to `/etc/nwg-hello/` and `/etc/greetd/` (nwg-hello only ever
+  reads `/etc/nwg-hello/`, it has no `$HOME` lookup at all);
+- the **wallpaper**, to `/usr/share/nwg-hello/wallpaper.jpg`;
+- the **font**, to `/usr/local/share/fonts/`. `FiraCode Nerd Font` lives in
+  `~/.local/share/fonts` for the session, where the greeter cannot see it —
+  and a font GTK cannot find does not error, it silently falls back.
+
+Files under `greeter/` are the source of truth; the copies in `/etc` are build
+output. Edit the former and re-run.
+
+### The form is on DP-3 only, on purpose
+
+`nwg-hello.json` sets `"monitor_nums": [1]`, so the login form appears on DP-3
+alone and DP-2 shows a matching flat background. That is not a style choice —
+**it is what makes the password field typable.**
+
+nwg-hello builds one window per monitor and *every* window asks
+gtk-layer-shell for `keyboard-mode: exclusive`. Two exclusive surfaces cannot
+both hold the keyboard, and `main.py` loops `for i in
+reversed(range(n_monitors))`, so DP-2 is created last and wins. The first
+version of this shipped with the form on both monitors, and typing at DP-3 fed
+the *portrait* screen's password field. Measured with each window's
+`has_toplevel_focus()`:
+
+| Setting | DP-3 | DP-2 | Result |
+|---|---|---|---|
+| `"monitor_nums": []` (default) | `False` | `True` | can't type at DP-3 |
+| `"form_on_monitors": [1]` | `False` | `True` | worse — focused window is an `EmptyWindow` with no field |
+| `"monitor_nums": [1]` | `True` | no surface | works |
+
+`form_on_monitors` reads like the setting for exactly this and does not fix
+it: `EmptyWindow` sets the same exclusive keyboard mode as `GreeterWindow`, so
+it still steals the keyboard, into a window that has nowhere to type.
+
+The indices are GDK's, and **both panels report the model `LG ULTRAGEAR`**, so
+geometry is the only way to tell them apart: index 0 is `1440x2560` (DP-2,
+portrait), index 1 is `2560x1440` (DP-3). If the monitors ever change, this
+number has to be re-derived — `scripts/install-greeter.sh` carries the
+one-liner.
+
+DP-2's colour is `misc:background_color = rgb(292b3f)` in
+`/etc/nwg-hello/hyprland.conf`: the wallpaper's mean composited under the CSS
+overlay, i.e. what DP-3 actually renders.
+
+### Gotchas found the hard way
+
+- **The CSS selectors are not the glade widget ids.** nwg-hello's template
+  calls the clock `lbl-clock`, but GTK3 does *not* use a GtkBuilder id as a
+  CSS name — verified: `Gtk.Buildable.get_name()` returns `lbl-clock` while
+  `widget.get_name()` returns `GtkLabel`, and a `#lbl-clock` rule matches
+  nothing. `ui.py` renames each widget with `set_property("name", ...)`, and
+  *those* are the CSS names: `form-wrapper`, `welcome-label`, `clock-label`,
+  `date-label`, `form-label`, `form-combo`, `password-entry`, `login-button`,
+  `power-button`. Anything else (`lbl-message`, `cb-show-password`) is never
+  renamed and has no id selector.
+- **A button's `color` does not reach its text.** GtkButton wraps its label in
+  a child node, and any rule matching that node beats the colour inherited
+  from the button — including `window { color: ... }`. The Login button
+  shipped light-on-light until `#login-button label` set it directly.
+- **The form is centred by a `<packing>` property, not by CSS.** nwg-hello
+  inherits the Sugar Candy layout, which packs the form into a horizontal box
+  with `expand=False, fill=False` so it sits against the left edge. `halign`
+  and `hexpand` are GtkWidget properties with no CSS equivalent, and setting
+  them on the widget does nothing — measured at runtime, `form-wrapper` still
+  reported `halign=fill`. Only the child's packing moves it.
+- **The blur is not reproduced, and does not need to be.** hyprlock sets
+  `blur_passes = 3`, but the wallpaper is a smooth radial gradient with no
+  detail — blurring it at sigma 12, 20 and 32 renders indistinguishably. Only
+  hyprlock's `brightness = 0.6` is visible, and GTK3 does that itself with an
+  overlay layer, so there is no second pre-blurred asset to keep in sync.
+- **`_greetd` is not in the `video` group.** Debian's greetd postinst creates
+  the account but does not add it, and nwg-hello's own README calls the
+  packaging out for this. Without it the greeter cannot open a DRM device:
+  black screen at boot. `install-greeter.sh` fixes it.
+- **The centred template is generated, not vendored.** `ui.py` calls
+  `builder.get_object(...)` on whatever template it is handed, so a stale
+  vendored copy missing a widget added by a later nwg-hello returns `None` and
+  the greeter dies on startup — which means being unable to log in.
+  `scripts/greeter-template.py` derives it from the installed template at
+  install time and makes exactly one edit; if that fails it falls back to the
+  stock left-aligned layout rather than risking an unbootable greeter.
 
 ## Neovim
 
