@@ -180,6 +180,27 @@ sudo systemctl enable --force gdm3
 sudo reboot
 ```
 
+### The apt error during install is expected
+
+`install.sh` prints this while installing greetd, and it looks worse than it
+is:
+
+```
+Failed to preset unit: File '/etc/systemd/system/display-manager.service'
+already exists and is a symlink to /lib/systemd/system/gdm3.service
+deb-systemd-helper: error: systemctl preset failed on greetd.service
+```
+
+greetd's postinst tries to claim `display-manager.service` while gdm3 still
+owns it. **Nothing is wrong**: the package still configures (`dpkg -l greetd`
+shows `ii`), and `install-greeter.sh` takes the alias afterwards with
+`systemctl enable --force greetd`. Confirm with:
+
+```bash
+readlink -f /etc/systemd/system/display-manager.service   # -> greetd.service
+systemctl is-enabled greetd gdm                           # -> enabled, disabled
+```
+
 ### Why not ly
 
 ly was the original plan, and it does not work here for two independent

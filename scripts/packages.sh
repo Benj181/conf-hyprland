@@ -50,6 +50,27 @@ echo "==> Installing login screen"
 # a Zig build here; it also renders in a text console, so it could not have
 # looked like hyprlock regardless. nwg-hello draws a real wallpaper and takes
 # CSS, which is what makes matching the lock screen possible.
+#
+# EXPECTED NOISE: greetd's postinst runs `systemctl preset greetd.service`,
+# which tries to claim /etc/systemd/system/display-manager.service. gdm3 still
+# owns that symlink at this point, so apt prints:
+#
+#     Failed to preset unit: File '/etc/systemd/system/display-manager.service'
+#     already exists and is a symlink to /lib/systemd/system/gdm3.service
+#     deb-systemd-helper: error: systemctl preset failed on greetd.service
+#
+# This is harmless and the install is unaffected: dpkg still marks greetd `ii`
+# (configured), and install-greeter.sh takes the alias afterwards with
+# `systemctl enable --force greetd`. Verified end state: display-manager.service
+# -> greetd.service, gdm disabled, greetd enabled.
+#
+# gdm3 is deliberately NOT disabled here to silence it. That would move the
+# display-manager switch into a script whose job is installing packages, and if
+# the run then stopped before install-greeter.sh, the machine would boot into
+# greetd running its default agreety text prompt. A confusing message beats a
+# confusing login screen.
+echo "    note: an apt 'failed to preset greetd.service' error here is expected"
+echo "          and harmless -- install-greeter.sh claims the alias afterwards."
 sudo apt-get install -y \
     greetd \
     nwg-hello
