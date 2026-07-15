@@ -107,18 +107,12 @@ Configs ask for **`FiraCode Nerd Font`** (UI) and **`FiraCode Nerd Font Mono`**
 (terminal/editor). Both names must match `fc-list : family` exactly or the app
 silently falls back and icons render as tofu boxes.
 
-Two traps worth knowing, both of which previously bit this repo:
-
 - `fonts-firacode` from apt provides **"Fira Code"** — no Nerd glyphs. It is
   not a substitute and is deliberately not installed.
-- Extracting only `"*Mono*"` from `FiraCode.zip` gives you
-  `FiraCode Nerd Font Mono` but **not** the proportional `FiraCode Nerd Font`.
-  `install-fonts.sh` extracts the whole archive and verifies both families.
 
 ## Neovim
 
-AstroNvim, absorbed from the former `conf-nvim` repo (its history is preserved
-in this one). `install.sh` installs Neovim and syncs plugins headlessly.
+`install.sh` installs Neovim and syncs plugins headlessly.
 
 Neovim comes from the **upstream tarball**, pinned, into `/opt/nvim` and
 symlinked to `/usr/local/bin/nvim` — apt only has 0.11.6, which is older than
