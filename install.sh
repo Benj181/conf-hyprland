@@ -35,10 +35,22 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-command -v stow >/dev/null || { echo "GNU stow is required: sudo pacman -S stow" >&2; exit 1; }
-
 if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "=== DRY RUN: nothing will be written ==="
+fi
+
+# stow comes from packages.sh, which a dry run skips -- so on a fresh machine,
+# demanding it up front made `--dry-run` fail on the one box it exists to
+# check. A preflight you cannot run before installing anything is not a
+# preflight. Report and continue; the real run still hard-fails.
+if ! command -v stow >/dev/null; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        echo "    note: stow not installed yet (scripts/packages.sh adds it);"
+        echo "          skipping the stow rehearsal, running the other checks"
+    else
+        echo "GNU stow is required: sudo pacman -S stow" >&2
+        exit 1
+    fi
 fi
 
 # Ask for sudo once up front rather than surprising the user mid-run.
@@ -60,7 +72,9 @@ fi
 
 echo "==> Stowing: ${PACKAGES[*]}"
 if [[ "$DRY_RUN" -eq 1 ]]; then
-    stow -n -v -t "$HOME" "${PACKAGES[@]}" 2>&1 | sed 's/^/    /'
+    if command -v stow >/dev/null; then
+        stow -n -v -t "$HOME" "${PACKAGES[@]}" 2>&1 | sed 's/^/    /'
+    fi
     # Worth running even though nothing is written: install-aur.sh and
     # install-greeter.sh do their checking with reads (pacman -Qq, systemctl
     # show, grep on nwg-hello's ui.py), so a dry run is a real preflight for

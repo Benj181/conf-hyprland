@@ -323,8 +323,11 @@ greetd runs nwg-hello inside a throwaway Hyprland session
 (`/etc/nwg-hello/hyprland.conf`), which exits the moment you log in.
 
 **This is the one step here that can leave you without a graphical login.**
-It doesn't have to be taken on faith, though — greetd can be started live from
-a TTY, and nwg-hello renders in your normal session:
+The plumbing is tested — in an Arch VM greetd starts, runs Hyprland as
+`greeter` and launches nwg-hello, with no CSS errors and no missing widgets on
+nwg-hello 0.4.5. But a VM has no GPU, and NVIDIA is exactly what it cannot
+check. So confirm it here rather than taking it on faith — greetd starts live
+from a TTY, and nwg-hello renders in your normal session:
 
 ```bash
 nwg-hello -t                    # draws the real greeter in a window, as you
@@ -341,17 +344,23 @@ that `greeter` can actually read the font and wallpaper, and that the default
 target is `graphical.target`. If one of those fires, it is telling you
 something real — read it rather than working around it.
 
-#### The default target is the one that bites
+#### The default target reaches greetd (checked, not assumed)
 
-`greetd.service` is `WantedBy=graphical.target`, and a minimal Arch install
-boots to `multi-user.target`. So `systemctl enable greetd` **succeeds**,
-`systemctl is-enabled greetd` reports **`enabled`**, and greetd never starts —
-nothing ever reaches the target that wants it. Ubuntu never showed this,
-because gdm3 set the graphical target years ago.
+`greetd.service` is `WantedBy=graphical.target`, so the default target has to
+reach it or `enable` is theatre. On stock Arch it does: systemd ships
+`/usr/lib/systemd/system/default.target` → `graphical.target`, and Arch writes
+no `/etc/systemd/system/default.target` override, so `get-default` answers
+`graphical.target` on a bare install.
 
-`install-greeter.sh` sets it explicitly. It's worth knowing about because it's
-this repo's favourite bug wearing a systemd costume: *config that reads as
-configured and does nothing*.
+Measured in an Arch VM rather than reasoned about — `enable --force` creates
+the `display-manager.service` alias, and greetd really does appear under
+`systemctl list-dependencies graphical.target`, which is the question that
+matters. `systemctl is-enabled` answering `enabled` would not have told you
+that.
+
+`install-greeter.sh` still sets the target, because it's free and idempotent
+and fixes the case where something explicitly wrote `multi-user.target`. But
+it's a no-op on a stock system, not a fix for a known bug.
 
 #### Rolling back is the bootloader, not another greeter
 
@@ -479,11 +488,12 @@ overlay, i.e. what DP-3 actually renders.
   detail — blurring it at sigma 12, 20 and 32 renders indistinguishably. Only
   hyprlock's `brightness = 0.6` is visible, and GTK3 does that itself with an
   overlay layer, so there is no second pre-blurred asset to keep in sync.
-- **`greeter` may not be in the `video` group.** Without it the greeter cannot
-  open a DRM device: black screen at boot. Debian's postinst definitely didn't
-  add it; whether Arch's sysusers file does is not something to take on trust.
-  `install-greeter.sh` checks membership and only then adds it, so it's correct
-  either way — and `id greeter` tells you which it was.
+- **`greeter` must be in the `video` group**, or it cannot open a DRM device:
+  black screen at boot. Arch's greetd does handle this — its sysusers file
+  carries `m greeter video`, verified — whereas Debian's postinst didn't, which
+  is why `install-greeter.sh` grew the check. It's kept because it checks
+  membership before adding, so it's a no-op here and a fix elsewhere. `id
+  greeter` tells you which.
 - **The centred template is generated, not vendored.** `ui.py` calls
   `builder.get_object(...)` on whatever template it is handed, so a stale
   vendored copy missing a widget added by a later nwg-hello returns `None` and

@@ -39,7 +39,10 @@ core=(
     hyprlock
     hypridle
     hyprpolkitagent
-    hyprland-qtutils
+    # hyprland-qtutils is NOT here: it exists in neither Arch's repos nor the
+    # AUR. It came over from the Ubuntu list, nothing in this repo ever
+    # referenced it, and pacman aborts the whole transaction on one unknown
+    # target -- so carrying it would have installed nothing at all.
     xdg-desktop-portal-hyprland  # Only an optdepend of hyprland on Arch, but
     xdg-desktop-portal-gtk       # theme/.config/gtk-4.0/settings.ini and
                                  # install-themes.sh both document the portal
@@ -164,27 +167,41 @@ nvidia=(
     egl-wayland                  # was: libnvidia-egl-wayland1
 )
 
+# ---------------------------------------------------------------------------
+# Check for a competing network manager BEFORE the transaction, not after.
+#
+# This installs NetworkManager, which a minimal Arch install does not have. If
+# something else is already managing the link -- archinstall offers
+# systemd-networkd, and iwd is a common pick -- then enabling NM on top gives
+# two daemons fighting over one interface. That is the one thing here that can
+# cost you the network you are installing over, so it refuses rather than
+# half-configuring it.
+#
+# It is up here on purpose: this fired at the *end* of a ~500-package download
+# in testing, which is a long wait to be told the run was never going to
+# finish. The condition has nothing to do with the transaction, so it does not
+# have to wait for it.
+# ---------------------------------------------------------------------------
+for unit in systemd-networkd.service iwd.service; do
+    if systemctl is-enabled --quiet "$unit" 2>/dev/null; then
+        echo "==> $unit is enabled, and this installs NetworkManager." >&2
+        echo "    Two daemons managing one interface is how you lose the network" >&2
+        echo "    mid-install. Disable one or the other by hand, then re-run:" >&2
+        echo "        sudo systemctl disable --now $unit" >&2
+        echo "    Or, if you want to keep it, drop networkmanager and" >&2
+        echo "    network-manager-applet from the core array below." >&2
+        exit 1
+    fi
+done
+
 echo "==> Full system upgrade and install (one pacman transaction)"
 sudo pacman -Syu --needed --noconfirm \
     "${core[@]}" "${login[@]}" "${theming[@]}" "${nvim[@]}" "${nvidia[@]}"
 
-# ---------------------------------------------------------------------------
-# Services Ubuntu enabled for us and a minimal Arch install does not.
-#
-# The guard is not paranoia: if archinstall left systemd-networkd or iwd
-# managing the link, enabling NetworkManager on top gives two daemons fighting
-# over one interface. Refuse loudly rather than half-configure the network --
-# this is the one step here that can cost you the network you are installing
-# over.
-# ---------------------------------------------------------------------------
+# Services Ubuntu enabled for us and a minimal Arch install does not. blueman
+# and waybar's network/bluetooth modules are frontends -- without the daemons
+# they are dead icons.
 echo "==> Enabling NetworkManager and bluetooth"
-for unit in systemd-networkd.service iwd.service; do
-    if systemctl is-enabled --quiet "$unit" 2>/dev/null; then
-        echo "    $unit is enabled; NetworkManager would fight it for the same" >&2
-        echo "    interface. Disable one or the other by hand, then re-run." >&2
-        exit 1
-    fi
-done
 sudo systemctl enable --now NetworkManager.service
 sudo systemctl enable --now bluetooth.service
 

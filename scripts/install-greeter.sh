@@ -23,11 +23,20 @@
 #
 # WHY SO MANY ASSERTS
 #
-# This script was ported from Ubuntu without an Arch machine to test on. Rather
-# than encode guesses about Arch's packaging in comments -- where being wrong
-# costs a black screen and reads as documentation -- the things that could not
-# be verified are checked here, at install time, each failing with the command
-# that reveals the truth. If an assert fires, it is telling you something real.
+# This was ported from Ubuntu, where the Arch facts it depends on could not be
+# checked. Rather than encode guesses in comments -- where being wrong costs a
+# black screen and still reads as documentation -- each one is checked here, at
+# install time, failing with the command that reveals the truth.
+#
+# They have since been run against a real Arch VM (nwg-hello 0.4.5, greetd
+# 0.10.3) and all pass, so on a healthy system they are quiet. That is the
+# point: an assert that fires is telling you the machine disagrees with what
+# this repo believes, and the belief is what is out of date. Read it rather
+# than working around it.
+#
+# One of them was wrong when written, and the VM is how that was found: an
+# earlier draft claimed Arch boots to multi-user.target so greetd would never
+# start. It does not -- see the default-target block near the end.
 #
 # THE FORM IS ON ONE MONITOR ON PURPOSE
 #
@@ -299,8 +308,9 @@ fi
 # now coming from ttf-firacode-nerd in /usr/share/fonts there is nothing to
 # copy. But its real point was that a font GTK cannot find does not error -- it
 # falls back silently -- so what replaces the copy is the check the copy never
-# did: ask `greeter`, not baas. `greeter`'s shell is nologin, so this is
-# `sudo -u`, which execs directly rather than through a login shell.
+# did: ask `greeter`, not baas -- it is `greeter` that has to find the font, and
+# it is the only user whose view of /home/baas (750) differs from yours. Arch's
+# sysusers gives greeter a real /bin/bash shell, so `sudo -u` just works.
 # ---------------------------------------------------------------------------
 if [ "$DRY_RUN" -eq 0 ] && getent passwd greeter >/dev/null; then
     echo "    checking what greeter can read"
@@ -324,17 +334,24 @@ fi
 # ---------------------------------------------------------------------------
 # Point the system at greetd.
 #
-# THE DEFAULT TARGET IS THE ONE THAT BITES.
+# greetd.service is WantedBy=graphical.target, so the default target has to
+# reach it. On stock Arch it already does, and that was worth checking rather
+# than assuming in either direction:
 #
-# greetd.service is WantedBy=graphical.target. A minimal Arch install has no
-# desktop and so boots to multi-user.target. `systemctl enable greetd` succeeds
-# against that, and `systemctl is-enabled greetd` cheerfully answers "enabled"
-# -- and greetd never starts, because nothing ever reaches the target that
-# wants it. Ubuntu never showed this: gdm3 set graphical.target years ago.
+#   systemd ships /usr/lib/systemd/system/default.target -> graphical.target,
+#   and Arch writes no /etc/systemd/system/default.target override, so
+#   `systemctl get-default` answers graphical.target on a bare install.
 #
-# That is this repo's founding bug in systemd form -- config that reads as
-# configured and does nothing -- and it is the black screen most likely to
-# happen here, so it is set explicitly rather than inherited.
+# Measured in an Arch VM: get-default is graphical.target, `enable --force`
+# creates the display-manager.service alias, and greetd shows up under
+# `systemctl list-dependencies graphical.target` -- i.e. it really is on the
+# boot path, not merely "enabled".
+#
+# So this set-default is a no-op on a stock system and stays only because it is
+# free and idempotent: it fixes the case where something (a previous install,
+# an installer profile) explicitly wrote multi-user.target. It is NOT, as an
+# earlier draft of this file claimed, a known Arch bug -- that claim was wrong
+# and is retracted rather than quietly softened.
 # ---------------------------------------------------------------------------
 current_target="$(systemctl get-default 2>/dev/null || true)"
 if [ "$current_target" != "graphical.target" ]; then
@@ -346,23 +363,11 @@ else
     echo "    default target is already graphical.target"
 fi
 
-# `--force` is defensive rather than load-bearing now: on a minimal Arch
-# install nothing else claims display-manager.service, so there is no gdm3 to
-# take the alias from. It keeps a re-run idempotent if anything ever does.
+# `--force` is defensive rather than load-bearing: on a minimal Arch install
+# nothing else claims display-manager.service, so there is no gdm3 to take the
+# alias from. It keeps a re-run idempotent if anything ever does.
 echo "    enabling greetd"
 run sudo systemctl enable --force greetd.service
-
-# Report, do not fail. `enable` wires greetd into graphical.target.wants/
-# regardless of the alias, and nothing else here wants the seat. Worth saying
-# out loud only because on Ubuntu this symlink existed, so its absence looks
-# like a failure if you go looking for it.
-unit="$(systemctl cat greetd.service 2>/dev/null || true)"
-if [ -n "$unit" ] && ! grep -Fq 'Alias=display-manager.service' <<<"$unit"; then
-    echo "    note: greetd.service declares no display-manager.service alias."
-    echo "          Harmless here -- nothing else wants the seat -- but"
-    echo "          'readlink /etc/systemd/system/display-manager.service' will"
-    echo "          come back empty, unlike on Ubuntu."
-fi
 
 if [ "$DRY_RUN" -eq 1 ]; then
     echo "==> Dry run: nothing was written"
@@ -384,9 +389,10 @@ cat <<'EOF'
     Greeter installed. It takes effect at the next reboot.
 
     This is the one step in this repo that can leave you without a graphical
-    login, and it could not be tested before you were on this machine. Check
-    it before rebooting -- greetd can be started live, from a TTY, without
-    committing to anything:
+    login. The plumbing is tested -- greetd starts, runs Hyprland as `greeter`
+    and launches nwg-hello -- but that was a VM with no GPU, and the NVIDIA
+    path is exactly what a VM cannot check. Confirm before rebooting; greetd
+    can be started live, from a TTY, without committing to anything:
 
         systemctl get-default                       # must be graphical.target
         systemctl list-dependencies graphical.target | grep greetd
