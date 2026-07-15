@@ -1,16 +1,22 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 36,
+    "height": 44,
     "margin-top": 6,
     "margin-left": 10,
     "margin-right": 10,
     "spacing": 8,
-
-    "modules-left": ["hyprland/workspaces"],
-    "modules-center": ["clock"],
-    "modules-right": ["pulseaudio", "network", "tray"],
-
+    "modules-left": [
+        "hyprland/workspaces"
+    ],
+    "modules-center": [
+        "clock"
+    ],
+    "modules-right": [
+        "pulseaudio",
+        "network",
+        "tray"
+    ],
     "hyprland/workspaces": {
         "format": "{icon}",
         "on-click": "activate"
@@ -20,16 +26,20 @@
         "tooltip-format": "<tt><small>{calendar}</small></tt>"
     },
     "network": {
-        "format-wifi": "  {essid}",
-        "format-ethernet": "󰈀 connected",
-        "format-disconnected": "󰤭 offline",
+        "format-wifi": "\uf1eb  {essid}",
+        "format-ethernet": "\uf0e8  connected",
+        "format-disconnected": "\uf127  offline",
         "on-click": "nm-connection-editor"
     },
     "pulseaudio": {
-        "format": "{icon} {volume}%",
-        "format-muted": " muted",
+        "format": "{icon}  {volume}%",
+        "format-muted": "\uf026  muted",
         "format-icons": {
-            "default": ["", "", ""]
+            "default": [
+                "\uf026",
+                "\uf027",
+                "\uf028"
+            ]
         },
         "on-click": "pavucontrol"
     },
