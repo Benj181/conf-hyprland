@@ -77,10 +77,14 @@ if ! command -v hyprshot >/dev/null 2>&1; then
     trap 'rm -rf "$tmp"' EXIT
     curl -fL --retry 3 -o "$tmp/hyprshot" \
         "https://raw.githubusercontent.com/Gustash/Hyprshot/${HYPRSHOT_VERSION}/hyprshot"
-    head -1 "$tmp/hyprshot" | grep -q '^#!' || {
-        echo "hyprshot download does not look like a script; refusing to install" >&2
-        exit 1
-    }
+    # No `head | grep -q` here: under `set -o pipefail` that returns 141 when
+    # it matches (grep -q exits early, head takes SIGPIPE), so a valid download
+    # would be rejected.
+    read -r firstline < "$tmp/hyprshot" || true
+    case "$firstline" in
+        '#!'*) ;;
+        *) echo "hyprshot download does not look like a script; refusing to install" >&2; exit 1 ;;
+    esac
     sudo install -m 755 "$tmp/hyprshot" /usr/local/bin/hyprshot
     echo "    installed hyprshot ${HYPRSHOT_VERSION}"
 else

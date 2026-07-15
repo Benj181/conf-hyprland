@@ -15,10 +15,18 @@ FONT_DIR="$HOME/.local/share/fonts/NerdFonts"
 URL="https://github.com/ryanoasis/nerd-fonts/releases/download/${NERD_FONTS_VERSION}/FiraCode.zip"
 
 # Exact family match: "FiraCode Nerd Font" is a substring of "FiraCode Nerd
-# Font Mono", so a plain grep would report success while the proportional
-# family is still missing -- which is the exact bug this script exists to fix.
+# Font Mono", so a plain substring grep would report success while the
+# proportional family is still missing -- the exact bug this script exists to
+# fix. Hence -Fx.
+#
+# The here-string is deliberate: `... | grep -Fxq` under `set -o pipefail`
+# returns 141, not 0, *when it matches*. grep -q exits on the first hit, the
+# upstream fc-list dies of SIGPIPE, and pipefail propagates that. A successful
+# match would be reported as a missing font.
 have_family() {
-    fc-list : family 2>/dev/null | tr ',' '\n' | sed 's/^[[:space:]]*//' | grep -Fxq "$1"
+    local families
+    families="$(fc-list : family 2>/dev/null | tr ',' '\n' | sed 's/^[[:space:]]*//')"
+    grep -Fxq "$1" <<<"$families"
 }
 
 if have_family "FiraCode Nerd Font" && have_family "FiraCode Nerd Font Mono"; then
