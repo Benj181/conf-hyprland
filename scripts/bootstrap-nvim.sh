@@ -22,9 +22,9 @@ echo "==> Syncing lazy.nvim plugins (headless, first run takes a minute)"
 
 # Mason tools, only if mason-tool-installer is actually configured -- calling a
 # command that does not exist would fail the whole install.
-if "$NVIM" --headless -c 'lua if pcall(require, "mason-tool-installer") then vim.cmd("qa") else vim.cmd("cq") end' 2>/dev/null; then
-    echo "==> Installing Mason tools"
-    "$NVIM" --headless "+MasonToolsInstallSync" +qa 2>&1 | sed 's/^/    /' || true
-fi
+# if "$NVIM" --headless -c 'lua if pcall(require, "mason-tool-installer") then vim.cmd("qa") else vim.cmd("cq") end' 2>/dev/null; then
+#     echo "==> Installing Mason tools"
+#     "$NVIM" --headless "+MasonToolsInstallSync" +qa 2>&1 | sed 's/^/    /' || true
+# fi
 
 echo "==> Neovim bootstrap done"
