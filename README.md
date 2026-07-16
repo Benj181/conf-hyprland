@@ -295,14 +295,28 @@ edits them in place rather than shipping copies.
 > logs `no password is available for user`, returns success, and the keyring just
 > never unlocks. Check with `journalctl -b | grep gkr-pam` — silence is correct.
 
-Two things that look like bugs and aren't:
+> [!WARNING]
+> **"the password for the login keyring was invalid" usually isn't about the
+> password.** `gkr-pam` reports *every* failure of the unlock request that way —
+> including "I couldn't write the file". Always check what the daemon itself
+> said before touching the PAM config: `journalctl -b -t gnome-keyring-daemon`.
+
+Three things that look like bugs and aren't:
 
 - **PAM only unlocks the keyring named `login`.** If `~/.local/share/keyrings/`
   has some other default (gnome-keyring makes a `Default_Keyring` on its own the
   first time an app wants a secret and no login keyring exists), you'll be
-  prompted forever with a perfectly correct PAM config. Move the directory aside
-  and log in again; `install-keyring.sh` detects this and says so, but never
-  touches it — those are your passwords.
+  prompted forever with a perfectly correct PAM config. Move the *contents*
+  aside — `mv ~/.local/share/keyrings/* ~/keyrings-backup/` — and **keep the
+  directory**. The daemon creates that directory only at startup, so removing it
+  means the next login can't write `login.keyring` into it, and you get the
+  misleading password error above. `install-keyring.sh` detects the stale
+  keyring and says so, but never touches it — those are your passwords.
+- **Reboot to apply, don't log out.** logind's `KillUserProcesses` is `no` on
+  Arch and the daemon runs under `user@1000.service`, so it outlives your
+  session. Logging back in hands your password to the *same daemon that was
+  already running* — a daemon started before any of this was configured is the
+  one that will handle your next login.
 - **`passwd` does not re-key the keyring.** Nothing here touches
   `/etc/pam.d/passwd`, so changing your login password silently breaks
   auto-unlock until you re-key it in seahorse. Add `password optional

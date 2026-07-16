@@ -206,6 +206,40 @@ install_pam /etc/pam.d/greetd 1
 install_pam /etc/pam.d/login  0
 
 # ---------------------------------------------------------------------------
+# The keyring directory must EXIST, or PAM reports a wrong password.
+#
+# gnome-keyring creates ~/.local/share/keyrings when the daemon starts, and
+# never again. The daemon then outlives your session -- logind's
+# KillUserProcesses defaults to no on Arch, and the socket-activated
+# gnome-keyring-daemon.service lives under user@1000.service, which survives a
+# logout. So a daemon started hours ago is the one that handles your next
+# login, and if the directory went away in the meantime it will not be
+# recreated.
+#
+# What that costs is not obvious, so here it is verbatim from this machine.
+# gkr-pam had the correct password and asked the daemon to make a login keyring:
+#
+#   gnome-keyring-daemon[1149]: couldn't write to file:
+#       /home/baas/.local/share/keyrings/login.keyring: No such file or directory
+#   gnome-keyring-daemon[1149]: couldn't create login keyring: An error occurred
+#       on the device
+#   greetd[26351]: gkr-pam: the password for the login keyring was invalid.
+#
+# The password was fine. gkr-pam collapses every failure of the unlock control
+# op into "the password ... was invalid", which is the single most misleading
+# message in this whole stack -- it sends you back to re-check the PAM config
+# that was already correct. Creating the directory is free, so do it rather
+# than leave that trap armed.
+# ---------------------------------------------------------------------------
+KEYRING_DIR="$HOME/.local/share/keyrings"
+if [ ! -d "$KEYRING_DIR" ]; then
+    echo "    creating $KEYRING_DIR (0700)"
+    run mkdir -p -m 700 "$KEYRING_DIR"
+else
+    echo "    $KEYRING_DIR exists"
+fi
+
+# ---------------------------------------------------------------------------
 # Report -- do not touch -- a keyring that PAM will never unlock.
 #
 # gkr-pam only ever unlocks the keyring literally named `login`. If the default
@@ -220,9 +254,7 @@ install_pam /etc/pam.d/login  0
 # deletes or moves them because it inferred they are stale is not a trade this
 # repo makes.
 # ---------------------------------------------------------------------------
-KEYRING_DIR="$HOME/.local/share/keyrings"
-if [ -d "$KEYRING_DIR" ] && [ ! -f "$KEYRING_DIR/login.keyring" ] &&
-    compgen -G "$KEYRING_DIR/*.keyring" >/dev/null; then
+if [ ! -f "$KEYRING_DIR/login.keyring" ] && compgen -G "$KEYRING_DIR/*.keyring" >/dev/null; then
     default_name="$(cat "$KEYRING_DIR/default" 2>/dev/null || echo "<unset>")"
     cat >&2 <<EOF
 
@@ -233,15 +265,22 @@ if [ -d "$KEYRING_DIR" ] && [ ! -f "$KEYRING_DIR/login.keyring" ] &&
     just written is correct and you will still be prompted, because your
     secrets live in a keyring it does not apply to.
 
-    A login keyring is created automatically at your next login, but only if
-    nothing else is claiming the default. To hand it over -- this is your
-    stored passwords, so read it before running it:
+    A login keyring is created at your next login, but only if nothing else is
+    claiming the default. To hand it over -- this is your stored passwords, so
+    read it before running it:
 
-        ls $KEYRING_DIR            # what you would be setting aside
-        mv $KEYRING_DIR "$KEYRING_DIR.old-\$(date +%s)"
+        ls $KEYRING_DIR                      # what you would be setting aside
+        mkdir -p ~/keyrings-backup
+        mv $KEYRING_DIR/* ~/keyrings-backup/
 
-    Then log out and back in. Anything stored in the old keyring stays in that
-    directory; seahorse can open it if you need something out of it.
+    Move the CONTENTS, and leave the directory itself in place. Moving the
+    directory is what an earlier version of this note told you to do, and it is
+    a trap: the running daemon only creates that directory at startup, so the
+    next login cannot write login.keyring into a directory that is gone, and
+    gkr-pam reports the failure as an invalid password. See above.
+
+    Then REBOOT rather than logging out. A logout leaves the old daemon running
+    (KillUserProcesses=no), and it is the one that would handle the next login.
 EOF
 fi
 
@@ -252,15 +291,31 @@ fi
 
 cat <<EOF
 
-    Keyring wired into PAM. It takes effect at your NEXT LOGIN -- the running
-    session already has an unlocked-or-not daemon and this cannot retrofit it.
+    Keyring wired into PAM. REBOOT to apply it -- not a logout.
 
-    Verify after logging back in (both should be silent):
+    A logout does not end the keyring daemon: logind's KillUserProcesses is no
+    on Arch, and the daemon lives under user@1000.service, which outlives the
+    session. So logging back in hands your password to the same daemon that was
+    already running, in whatever state it was already in. That is not a
+    theoretical concern -- it is why the first attempt at this on europa failed.
+
+    Verify after the reboot. Both should be silent:
 
         journalctl -b | grep gkr-pam
         ls ~/.local/share/keyrings/login.keyring
 
-    "no password is available for user" there means the auth line is not seeing
-    PAM_AUTHTOK -- the failure this script exists to prevent. Originals are in
-    $BACKUP_DIR if you need to back out.
+    If gkr-pam says something, read these two before believing it:
+
+      "no password is available for user"
+          The auth line is not seeing PAM_AUTHTOK -- it is above
+          'auth include system-local-login' rather than below it. This script
+          places it; a warning here means something else moved it back.
+
+      "the password for the login keyring was invalid"
+          Probably NOT the password. gkr-pam reports every unlock failure this
+          way, including "I could not write the file". Ask the daemon instead,
+          which says what actually happened:
+              journalctl -b -t gnome-keyring-daemon
+
+    Originals are in $BACKUP_DIR if you need to back out.
 EOF
