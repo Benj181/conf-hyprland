@@ -88,6 +88,19 @@ apps=(
     discord
 )
 
+# Secrets. The PAM half is scripts/install-keyring.sh, and it is not optional:
+# these packages on their own give you a keyring that prompts for a password on
+# every login, which is the thing a keyring exists to avoid.
+keyring=(
+    gnome-keyring   # the daemon, and pam_gnome_keyring.so, which
+                    # install-keyring.sh wires into /etc/pam.d
+    libsecret       # the library every client links, and secret-tool. Only
+                    # transitive today (brave and nautilus both pull it in), so
+                    # it is named outright rather than left to arrive by luck.
+    seahorse        # the only way to look inside the keyring, rename one, or
+                    # re-key it after a password change -- see README, Keyring.
+)
+
 # Login screen. See scripts/install-greeter.sh.
 #
 # greetd creates the `greeter` account from /usr/lib/sysusers.d/greetd.conf at
@@ -247,7 +260,8 @@ done
 
 echo "==> Full system upgrade and install (one pacman transaction)"
 sudo pacman -Syu --needed --noconfirm \
-    "${core[@]}" "${apps[@]}" "${login[@]}" "${theming[@]}" "${nvim[@]}" "${rust[@]}" "${nvidia[@]}"
+    "${core[@]}" "${apps[@]}" "${keyring[@]}" "${login[@]}" "${theming[@]}" \
+    "${nvim[@]}" "${rust[@]}" "${nvidia[@]}"
 
 # A minimal Arch install does not enable these. blueman and waybar's
 # network/bluetooth modules are frontends -- without the daemons they are dead

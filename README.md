@@ -65,6 +65,7 @@
 | **AUR helper** | paru (built from source) |
 | **Rust** | rustup — stable, `complete` profile |
 | **Login** | greetd + nwg-hello |
+| **Secrets** | gnome-keyring, unlocked by PAM at login |
 | **Theme** | Catppuccin Mocha, everywhere |
 
 ## Install
@@ -276,6 +277,42 @@ The finer details — why the form is on DP-3 only, the GTK CSS-name vs glade-id
 trap, the generated (not vendored) template — live in the comments in
 `scripts/install-greeter.sh` and `scripts/greeter-template.py`, next to the code
 that depends on them.
+
+## Keyring
+
+`gnome-keyring` stores app secrets (Brave's passwords, anything using libsecret).
+`scripts/install-keyring.sh` edits `/etc/pam.d/greetd` and `/etc/pam.d/login` so
+the login keyring unlocks with your login password instead of prompting. Both
+files belong to packages (greetd, util-linux) but are in pacman's `backup` array,
+so the edits survive upgrades and appear as `.pacnew` — which is why this repo
+edits them in place rather than shipping copies.
+
+> [!IMPORTANT]
+> **The `auth` line must come after `auth include system-local-login`.**
+> `pam_gnome_keyring` doesn't prompt — it reads the password out of
+> `PAM_AUTHTOK`, which `pam_unix` sets *inside* that include. Above the include
+> there's no password yet, and because the line is `optional` it doesn't fail: it
+> logs `no password is available for user`, returns success, and the keyring just
+> never unlocks. Check with `journalctl -b | grep gkr-pam` — silence is correct.
+
+Two things that look like bugs and aren't:
+
+- **PAM only unlocks the keyring named `login`.** If `~/.local/share/keyrings/`
+  has some other default (gnome-keyring makes a `Default_Keyring` on its own the
+  first time an app wants a secret and no login keyring exists), you'll be
+  prompted forever with a perfectly correct PAM config. Move the directory aside
+  and log in again; `install-keyring.sh` detects this and says so, but never
+  touches it — those are your passwords.
+- **`passwd` does not re-key the keyring.** Nothing here touches
+  `/etc/pam.d/passwd`, so changing your login password silently breaks
+  auto-unlock until you re-key it in seahorse. Add `password optional
+  pam_gnome_keyring.so` to `/etc/pam.d/passwd` if you'd rather PAM handled it.
+
+There's no `exec-once = gnome-keyring-daemon` in the Hyprland config on purpose:
+PAM starts the daemon with your password in hand, which is the only moment the
+keyring can be unlocked without a prompt. A second daemon just races it. Note
+that gnome-keyring 50 has **no SSH agent** — upstream removed it, so
+`--components=ssh` does nothing; use openssh's `ssh-agent.service` if you want one.
 
 ## Neovim
 

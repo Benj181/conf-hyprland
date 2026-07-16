@@ -80,6 +80,7 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
     # show, grep on nwg-hello's ui.py), so a dry run is a real preflight for
     # the two steps most likely to surprise you -- not just a stow rehearsal.
     ./scripts/install-aur.sh 1
+    ./scripts/install-keyring.sh 1
     if [[ "$SKIP_GREETER" -eq 0 ]]; then
         ./scripts/install-greeter.sh "$DOTFILES_DIR" 1
     fi
@@ -90,6 +91,9 @@ stow -v -t "$HOME" "${PACKAGES[@]}" 2>&1 | sed 's/^/    /'
 
 if [[ "$SKIP_PACKAGES" -eq 0 ]]; then
     ./scripts/install-themes.sh
+    # Edits /etc/pam.d/{greetd,login} in place rather than stowing anything:
+    # both files belong to packages, and pacman keeps local edits to them.
+    ./scripts/install-keyring.sh 0
     # Not a stow package: the greeter runs as `greeter`, which cannot read $HOME.
     if [[ "$SKIP_GREETER" -eq 0 ]]; then
         ./scripts/install-greeter.sh "$DOTFILES_DIR" 0
