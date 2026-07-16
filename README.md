@@ -59,6 +59,11 @@
 | **Lock / idle** | hyprlock, hypridle |
 | **Wallpaper** | hyprpaper |
 | **File manager** | Nautilus |
+| **Browser** | Brave |
+| **Chat** | Discord |
+| **Agentic coding** | Claude Code |
+| **AUR helper** | paru (built from source) |
+| **Rust** | rustup — stable, `complete` profile |
 | **Login** | greetd + nwg-hello |
 | **Theme** | Catppuccin Mocha, everywhere |
 
@@ -130,10 +135,22 @@ Anything already in the way (a config from a previous setup) is moved to
 > **Never `pacman -Sy <pkg>`.** It's a partial upgrade — refreshes the databases,
 > then installs against libraries the rest of the system hasn't caught up to — and
 > it breaks Arch systems. `packages.sh` uses one `pacman -Syu --needed`
-> transaction instead. Any AUR helper's `-Sy` is the same trap — which is one
-> reason there isn't one here: `brave-bin` is the only AUR package, and
-> `install-aur.sh` builds it with `makepkg` directly. Re-run that script to
-> update Brave; `pacman -Syu` won't.
+> transaction instead, and `paru -Sy` is the same trap — use `paru -Syu`.
+>
+> AUR packages (`brave-bin`, `claude-code`) come from `paru`, which
+> `install-aur.sh` bootstraps by building it **from source** — `paru-bin` ships a
+> binary linked against a `libalpm` that pacman has since moved past, so it
+> installs cleanly and then dies when run. `pacman -Syu` does not update AUR
+> packages; `paru -Syu` updates both, and that's the update path for Brave.
+
+> [!NOTE]
+> **Rust comes from `rustup`, not the `rust` package** — they conflict, and
+> `packages.sh` refuses up front if `rust`, `cargo` or `rustfmt` is installed
+> (`sudo pacman -Rdd rust` clears it). Note that the rustup *package* is only
+> shims: `/usr/bin/cargo` is a symlink to `rustup` and errors with "no default
+> toolchain configured" until a toolchain exists, so `packages.sh` installs
+> stable itself — as **you**, since toolchains live in `$HOME/.rustup`. This is
+> also why it runs before `install-aur.sh`, which builds paru with cargo.
 
 > [!NOTE]
 > This targets one machine (`europa`) — no hardware detection, no per-host

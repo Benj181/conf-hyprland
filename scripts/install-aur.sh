@@ -1,42 +1,52 @@
 #!/usr/bin/env bash
 # scripts/install-aur.sh
-# The one package this setup needs that Arch does not carry in its own repos:
-# brave-bin. Everything else -- including nwg-hello and hyprshot -- comes from
-# the extra repo.
+# The packages this setup needs that Arch does not carry in its own repos:
+# paru, brave-bin and claude-code. Everything else -- including discord,
+# nwg-hello and hyprshot -- comes from the repos via scripts/packages.sh.
 #
-# WHY THERE IS NO AUR HELPER
+# WHY paru IS BUILT FROM SOURCE AND paru-bin IS NOT USED
 #
-# This used to bootstrap paru-bin and then run `paru -S brave-bin`. A helper for
-# exactly one package was already thin, but what settled it is that paru-bin
-# BREAKS, and did so on a clean Arch install of 2026-07:
+# This is not a preference. paru-bin BREAKS, and did so on a clean Arch install
+# of 2026-07:
 #
 #     paru: error while loading shared libraries: libalpm.so.15
 #
-# paru links pacman's libalpm. paru-bin ships a binary upstream compiled against
+# paru links pacman's libalpm. paru-bin ships a binary compiled upstream against
 # whatever libalpm was current at release -- .so.15 -- while pacman 7.1 installs
-# .so.16. Worse, paru-bin's PKGBUILD declares `libalpm.so>=14`, an unbounded
-# lower bound, so pacman considers .so.16 to satisfy it, installs the package
-# happily, and the breakage only appears when the binary is RUN. install.sh then
-# died here, before stowing anything.
+# .so.16. Worse, its PKGBUILD declares `libalpm.so>=14`, an unbounded lower
+# bound, so pacman considers .so.16 to satisfy it, installs the package happily,
+# and the breakage only appears when the binary is RUN. install.sh died here,
+# before stowing anything.
 #
-# The old comment justified paru-bin as "the same trust decision already being
-# made for brave-bin, so it is not a new one". The trust decision was the same.
-# The ABI coupling was not: brave-bin does not link libalpm, so it cannot break
-# this way, and the analogy was what made the risk invisible. (Building `paru`
-# from source does fix it -- it compiles against the libalpm actually installed
-# -- but that drags in a full Rust toolchain for a helper we do not need.)
+# The AUR `paru` package builds from source, so it compiles against the libalpm
+# actually installed. That costs a Rust compile and buys a helper that works.
 #
-# makepkg alone installs brave-bin in seconds, which is all the helper was ever
-# doing here. The clone-verify-makepkg dance below is not new code: it is what
-# this script already did to bootstrap paru, pointed at the package we actually
-# want.
+# The toolchain it compiles with is not incidental. paru's makedepend is
+# `cargo`, and packages.sh has already installed rustup -- which PROVIDES cargo
+# -- so `makepkg -s` resolves that dependency to the rustup shims and installs
+# nothing. Those shims only work because packages.sh also installed a toolchain
+# behind them. If it had not, makepkg would report the dependency satisfied and
+# the build would still die on "no default toolchain configured".
 #
-# CONSEQUENCE, STATED PLAINLY: with no helper there is no `paru -Syu` to carry
-# brave forward, and pacman -Syu does not update AUR packages. Brave is the one
-# thing here that talks to the whole internet, so it must not silently rot. This
-# script therefore re-checks the AUR every run and rebuilds when upstream is
-# newer, which makes `./scripts/install-aur.sh` the update path. Run it when you
-# want a browser update; nothing else will do it for you.
+# THE SAME TRAP APPLIES TO OUR OWN BUILD, LATER
+#
+# A locally built paru is only correct against the libalpm it was built against.
+# The day pacman ships libalpm.so.17, that unbounded `>=14` means pacman will
+# NOT consider paru outdated, will not rebuild it, and it dies exactly the way
+# paru-bin did. So the check below is not "is paru installed" -- pacman -Q would
+# have answered yes in every case above, which is why it was such a good trap.
+# It is "does paru RUN", and a paru that does not run is rebuilt.
+#
+# WHY THERE IS A HELPER AT ALL NOW
+#
+# Earlier this script built brave-bin by hand and had no helper, on the grounds
+# that one package did not justify one. Two things changed: there are three AUR
+# packages now, and paru is wanted in its own right. It also closes a
+# shortcoming this file used to state plainly -- that with no helper, nothing
+# carried brave forward, because `pacman -Syu` does not update AUR packages, and
+# brave is the one thing here that talks to the whole internet. `paru -Syu` now
+# does, and that is the update path. This script is the bootstrap; paru is the
+# maintenance.
 #
 # ORDER MATTERS. This must run after scripts/packages.sh:
 #
@@ -48,8 +58,8 @@
 #     -- the partial upgrade packages.sh goes out of its way to avoid.
 #
 # NEVER AS ROOT. makepkg refuses to run as root outright, and it is right to: a
-# PKGBUILD is arbitrary shell from a repository anyone can submit to. It calls
-# sudo itself for the one step that needs it (pacman -U on the built package).
+# PKGBUILD is arbitrary shell from a repository anyone can submit to. paru
+# refuses too. Both call sudo themselves for the steps that need it.
 #
 # Usage: install-aur.sh [dry_run:0|1]
 
@@ -57,16 +67,18 @@ set -euo pipefail
 
 DRY_RUN="${1:-0}"
 
-AUR_PKG=brave-bin
-AUR_URL="https://aur.archlinux.org/${AUR_PKG}.git"
+# Built by hand, because it is the thing that builds the others.
+PARU_URL="https://aur.archlinux.org/paru.git"
 
-run() {
-    if [ "$DRY_RUN" -eq 1 ]; then
-        echo "    would: $*"
-    else
-        "$@"
-    fi
-}
+# Installed with paru, once paru exists.
+#
+# Deliberately not pinned. The AUR has no tags, and pinning would freeze a
+# *browser* out of security updates -- the wrong trade for the one package here
+# that talks to the whole internet.
+AUR_PKGS=(
+    brave-bin      # keybinds.conf names the `brave` binary
+    claude-code    # ships /usr/bin/claude
+)
 
 if [ "$(id -u)" -eq 0 ]; then
     echo "==> install-aur.sh must not run as root: makepkg refuses to build as" >&2
@@ -86,66 +98,100 @@ for dep in base-devel git; do
     fi
 done
 
-echo "==> Installing AUR packages ($AUR_PKG)"
+# The whole point: run it, do not just look for it. See THE SAME TRAP, above.
+paru_works() {
+    command -v paru >/dev/null 2>&1 && paru --version >/dev/null 2>&1
+}
 
 if [ "$DRY_RUN" -eq 1 ]; then
-    echo "    would: git clone --depth 1 $AUR_URL"
-    echo "    would: makepkg -si --noconfirm   (only if the AUR is newer)"
+    echo "==> AUR packages (dry run)"
+    if paru_works; then
+        echo "    paru $(paru --version | awk '{print $2}') present and runnable"
+    elif command -v paru >/dev/null 2>&1; then
+        echo "    paru is INSTALLED BUT DOES NOT RUN -- would rebuild from source:"
+        echo "    would: git clone --depth 1 $PARU_URL && makepkg -si --noconfirm"
+        paru --version 2>&1 | sed 's/^/        /' || true
+    else
+        echo "    paru not installed -- would build from source:"
+        echo "    would: git clone --depth 1 $PARU_URL && makepkg -si --noconfirm"
+    fi
+    for pkg in "${AUR_PKGS[@]}"; do
+        ver="$(pacman -Q "$pkg" 2>/dev/null | awk '{print $2}' || true)"
+        echo "    would: paru -S --needed $pkg   (installed: ${ver:-none})"
+    done
     echo "==> Dry run: nothing was written"
     exit 0
 fi
 
-installed_ver="$(pacman -Q "$AUR_PKG" 2>/dev/null | awk '{print $2}' || true)"
-
-tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
-git clone --depth 1 "$AUR_URL" "$tmp/$AUR_PKG"
-
-# Verify the clone is what it claims before running it -- the same reflex as the
-# old hyprshot shebang check. This is the honest limit of what can be verified
-# about an AUR clone: it proves the repository exists and has the shape of a
-# package, not that its contents are safe.
-[ -f "$tmp/$AUR_PKG/PKGBUILD" ] || {
-    echo "==> AUR clone contains no PKGBUILD; refusing to build" >&2
-    exit 1
-}
-
-# --printsrcinfo rather than sourcing the PKGBUILD into this shell: it asks
-# makepkg what the version is instead of executing the file to find out.
-#
-# The epoch is not optional here. brave-bin carries one, so `pacman -Q` says
-# "1:1.92.140-1" while pkgver-pkgrel alone is "1.92.140-1" -- they never
-# compare equal, and the version check silently degrades into rebuilding the
-# browser on every run. Reconstruct the full epoch:pkgver-pkgrel that pacman
-# reports, and compare like with like.
-aur_ver="$(
-    cd "$tmp/$AUR_PKG" && makepkg --printsrcinfo 2>/dev/null | awk '
-        /^\tepoch =/  {e=$3}
-        /^\tpkgver =/ {v=$3}
-        /^\tpkgrel =/ {r=$3}
-        END {if (v != "") printf "%s%s-%s\n", (e == "" ? "" : e":"), v, r}
-    '
-)"
-
-if [ -n "$installed_ver" ] && [ "$installed_ver" = "$aur_ver" ]; then
-    echo "    $AUR_PKG $installed_ver is current; nothing to build"
+# ---------------------------------------------------------------------------
+# Bootstrap paru.
+# ---------------------------------------------------------------------------
+if paru_works; then
+    echo "==> paru $(paru --version | awk '{print $2}') already works; not rebuilding"
 else
-    if [ -n "$installed_ver" ]; then
-        echo "    $AUR_PKG $installed_ver -> $aur_ver"
+    if command -v paru >/dev/null 2>&1; then
+        echo "==> paru is installed but does not run. Rebuilding against the"
+        echo "    libalpm actually present:"
+        paru --version 2>&1 | sed 's/^/        /' || true
     else
-        echo "    building $AUR_PKG $aur_ver"
+        echo "==> Building paru from source"
     fi
-    # Deliberately not pinned to a commit. The AUR has no tags, and pinning
-    # would freeze a *browser* out of security updates -- the wrong trade for
-    # the one package here that talks to the whole internet.
-    ( cd "$tmp/$AUR_PKG" && makepkg -si --noconfirm --needed )
+
+    tmp="$(mktemp -d)"
+    trap 'rm -rf "$tmp"' EXIT
+    git clone --depth 1 "$PARU_URL" "$tmp/paru"
+
+    # Verify the clone is what it claims before running it. This is the honest
+    # limit of what can be verified about an AUR clone: it proves the repository
+    # exists and has the shape of a package, not that its contents are safe.
+    [ -f "$tmp/paru/PKGBUILD" ] || {
+        echo "==> paru clone contains no PKGBUILD; refusing to build" >&2
+        exit 1
+    }
+
+    # No --needed here, and that is load-bearing. --needed reaches pacman -U,
+    # which compares versions and skips when they match. Rebuilding a BROKEN
+    # paru produces the same pkgver as the broken one installed -- so --needed
+    # would skip the install and leave the breakage in place, having just spent
+    # a Rust compile to fix it.
+    ( cd "$tmp/paru" && makepkg -si --noconfirm )
+
+    paru_works || {
+        echo "==> paru built and installed but still does not run:" >&2
+        paru --version 2>&1 | sed 's/^/        /' >&2 || true
+        exit 1
+    }
+    echo "    paru $(paru --version | awk '{print $2}') built and working"
 fi
 
-# The binary is `brave`, not `brave-browser`. hypr/.config/hypr/keybinds.conf
-# names it; a mismatch is a keybind that silently does nothing.
-command -v brave >/dev/null || {
-    echo "==> $AUR_PKG installed but no 'brave' on PATH" >&2
-    echo "    Check with: pacman -Ql $AUR_PKG | grep bin/" >&2
+# ---------------------------------------------------------------------------
+# Everything else, through paru.
+#
+# --needed is what makes this idempotent: paru compares the installed version
+# against the AUR's and skips what is already current, so a re-run does not
+# rebuild the browser. This replaces a hand-rolled --printsrcinfo version
+# comparison that had to reconstruct brave-bin's epoch to avoid exactly that.
+# ---------------------------------------------------------------------------
+echo "==> Installing AUR packages: ${AUR_PKGS[*]}"
+paru -S --needed --noconfirm "${AUR_PKGS[@]}"
+
+# Prove the binaries the configs name actually landed, rather than assuming the
+# packages did what they say. The binary is `brave`, not `brave-browser`;
+# hypr/.config/hypr/keybinds.conf names it, and a mismatch is a keybind that
+# silently does nothing.
+echo "==> Verifying AUR binaries"
+missing=0
+for bin in brave claude; do
+    if command -v "$bin" >/dev/null 2>&1; then
+        echo "    OK: $bin"
+    else
+        echo "    MISSING: $bin" >&2
+        missing=1
+    fi
+done
+[ "$missing" -eq 0 ] || {
+    echo "An AUR package installed but did not provide the binary named above." >&2
+    echo "Inspect with: pacman -Ql ${AUR_PKGS[*]} | grep bin/" >&2
     exit 1
 }
 

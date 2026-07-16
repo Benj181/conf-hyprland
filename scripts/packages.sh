@@ -80,6 +80,14 @@ core=(
     git                          # also required by install-aur.sh
 )
 
+# Desktop applications that Arch carries itself.
+#
+# Brave and Claude Code are NOT here -- neither is in the repos, so both come
+# from the AUR via scripts/install-aur.sh. Discord is, so it does not need to.
+apps=(
+    discord
+)
+
 # Login screen. See scripts/install-greeter.sh.
 #
 # greetd creates the `greeter` account from /usr/lib/sysusers.d/greetd.conf at
@@ -147,6 +155,21 @@ nvim=(
     luarocks
 )
 
+# Rust, via rustup rather than the `rust` package.
+#
+# These two cannot coexist: rustup Provides `rust` and `cargo` AND Conflicts
+# with both -- see the guard above the transaction. Naming rustup here is what
+# decides which one wins, and the timing is not incidental. paru's makedepend is
+# `cargo`, so if this did not run first, `makepkg -s` in install-aur.sh would
+# resolve that by installing `rust`, and rustup could never be installed
+# afterwards without removing it again.
+#
+# A toolchain is a separate step from the package -- see below. The package
+# alone gives you shims that error.
+rust=(
+    rustup
+)
+
 # NVIDIA. Blackwell is open-kernel-module only.
 #
 # nvidia-open is the PREBUILT module set for the stock `linux` kernel. If the
@@ -184,9 +207,47 @@ for unit in systemd-networkd.service iwd.service; do
     fi
 done
 
+# ---------------------------------------------------------------------------
+# Check for the rust/rustup conflict BEFORE the transaction too, and for the
+# same reason as above: this aborts the whole run, so find out in a second
+# rather than at the end of a ~500-package download.
+#
+# rustup declares `Conflicts: rust cargo rustfmt`. pacman resolves a conflict
+# against an already-installed package by PROMPTING, and --noconfirm answers
+# every prompt with its default -- which for this one is "no". So the entire
+# transaction aborts as "unresolvable package conflicts detected" and nothing
+# here installs at all, including the packages that have nothing to do with
+# Rust.
+#
+# `pacman -Qq rust` is NOT the test, and this is the trap worth naming: pacman
+# resolves Provides on query, so on a machine with only rustup installed
+# `pacman -Qq rust` prints "rustup" and exits 0. It answers "is anything
+# providing rust installed?", which is yes for the very package being
+# installed -- so the obvious check reports a conflict with itself, forever.
+# Match the real package NAME against the installed list instead.
+#
+# The here-string is the same defence as have_family() below: `pacman -Qq |
+# grep -Fxq` under `set -o pipefail` returns 141 when it MATCHES, because grep
+# exits early and pacman dies of SIGPIPE.
+# ---------------------------------------------------------------------------
+installed_names="$(pacman -Qq)"
+for pkg in rust cargo rustfmt; do
+    if grep -Fxq "$pkg" <<<"$installed_names"; then
+        echo "==> The package '$pkg' is installed, and this installs rustup," >&2
+        echo "    which conflicts with it. pacman --noconfirm cannot resolve" >&2
+        echo "    that and would abort the entire transaction." >&2
+        echo "    rustup replaces it -- it provides rustc/cargo/rustfmt as shims" >&2
+        echo "    over toolchains it manages. Remove it, then re-run:" >&2
+        echo "        sudo pacman -Rdd $pkg" >&2
+        echo "    (-Rdd because other packages depend on it by name; rustup" >&2
+        echo "    satisfies those the moment it is installed.)" >&2
+        exit 1
+    fi
+done
+
 echo "==> Full system upgrade and install (one pacman transaction)"
 sudo pacman -Syu --needed --noconfirm \
-    "${core[@]}" "${login[@]}" "${theming[@]}" "${nvim[@]}" "${nvidia[@]}"
+    "${core[@]}" "${apps[@]}" "${login[@]}" "${theming[@]}" "${nvim[@]}" "${rust[@]}" "${nvidia[@]}"
 
 # A minimal Arch install does not enable these. blueman and waybar's
 # network/bluetooth modules are frontends -- without the daemons they are dead
@@ -194,6 +255,65 @@ sudo pacman -Syu --needed --noconfirm \
 echo "==> Enabling NetworkManager and bluetooth"
 sudo systemctl enable --now NetworkManager.service
 sudo systemctl enable --now bluetooth.service
+
+# ---------------------------------------------------------------------------
+# Install an actual Rust toolchain.
+#
+# The rustup PACKAGE is not a Rust toolchain. /usr/bin/cargo and /usr/bin/rustc
+# are symlinks to /usr/bin/rustup -- shims that dispatch to whichever toolchain
+# is default. Fresh from pacman there is no toolchain and no default, so every
+# one of them exits with:
+#
+#     error: no default toolchain configured
+#
+# That is not a cosmetic gap, and it is why this step is here rather than left
+# to the user. rustup PROVIDES cargo, so `makepkg -s` in install-aur.sh sees
+# paru's `cargo` makedepend as already satisfied, installs nothing, and starts
+# building -- then `cargo build` dies on the missing toolchain. The dependency
+# is met on paper and absent in fact. This must therefore run before
+# install-aur.sh, which install.sh already orders correctly.
+#
+# NOT UNDER SUDO. Toolchains are per-user: they install into $HOME/.rustup and
+# $HOME/.cargo. Run this as root and they land in /root, root's cargo works,
+# and your shell still has nothing -- a green run with no toolchain, which is
+# the failure mode this repo keeps having to design against.
+# ---------------------------------------------------------------------------
+if [ "$(id -u)" -eq 0 ]; then
+    echo "==> Refusing to install the Rust toolchain as root: it installs into" >&2
+    echo "    \$HOME/.rustup, so it would land in /root and your own user would" >&2
+    echo "    still have none. Re-run as your normal user; this script calls" >&2
+    echo "    sudo itself for the parts that need it." >&2
+    exit 1
+fi
+
+echo "==> Installing the Rust toolchain (stable, complete profile)"
+# --no-self-update: Arch builds rustup with self-update disabled ("you should
+# probably use your system package manager"), so let it not try.
+rustup toolchain install stable --profile complete --no-self-update
+rustup default stable
+
+# --profile applies ONLY when a toolchain is first installed. On a machine that
+# already has stable -- from rustup's `default` profile, say -- the line above
+# reports "unchanged" and adds nothing, so rust-analyzer and rust-src stay
+# missing while the run looks completely successful. Name the extras outright so
+# the top-up path works as well as the fresh one; `component add` is idempotent.
+#
+# miri is deliberately not in this list even though `complete` implies it: it is
+# not in the stable channel's manifest. The profile omits it silently, but
+# `rustup component add miri` fails outright and would take the script with it.
+echo "==> Adding toolchain components (rust-analyzer, rust-src, llvm-tools)"
+rustup component add rust-analyzer rust-src llvm-tools
+
+# Same reflex as the font check below: prove the toolchain answers, rather than
+# trusting that the install said so. This is the exact call install-aur.sh is
+# about to depend on.
+if ! cargo --version >/dev/null 2>&1; then
+    echo "==> rustup is installed but 'cargo' does not run:" >&2
+    cargo --version 2>&1 | sed 's/^/        /' >&2 || true
+    echo "    install-aur.sh builds paru with cargo and would fail here." >&2
+    exit 1
+fi
+echo "    OK: $(cargo --version)"
 
 # ---------------------------------------------------------------------------
 # Prove the font landed, rather than assuming the package did what it says.
