@@ -69,6 +69,12 @@
 > — it replaces Ubuntu without touching the Windows partition sharing the disk,
 > and hands off to the steps below at the first TTY login.
 
+Do it **staged**, not in one shot: install everything *except* the login screen
+first, reboot to confirm the desktop actually comes up on your GPU, and only then
+switch on the greeter — with a live check, because it's the one step that can
+leave you without a graphical login. (Once you trust it, `./install.sh` with no
+flags does all of it at once — but the first time on real hardware, stage it.)
+
 **1. Clone into `~/hyprland-dotfiles`** (the path is hard-coded in a few configs,
 so keep the target directory name):
 
@@ -77,31 +83,48 @@ git clone https://github.com/Benj181/conf-hyprland.git ~/hyprland-dotfiles
 cd ~/hyprland-dotfiles
 ```
 
-**2. Run the installer:**
+**2. Preview — writes nothing, runs every read-only check:**
 
 ```bash
-./install.sh
+./install.sh --dry-run
 ```
 
-That's the whole thing — pacman packages, NVIDIA driver, Neovim, Nerd Fonts,
-theming, the login screen, and every config symlinked into place with GNU Stow.
+This is a real preflight, not just a stow rehearsal: the AUR and greeter steps do
+all their checking with reads, so a dry run runs those checks too.
 
-**3. Reboot.** The greeter needs it, and so does the driver if the run landed a
-new kernel or NVIDIA version.
-
-Options:
+**3. Install everything except the login screen:**
 
 ```bash
-./install.sh --dry-run        # report what would change, write nothing
-./install.sh --skip-packages  # configs only, skips pacman/AUR/themes/nvim
-./install.sh --skip-greeter   # everything except the display manager switch
+./install.sh --skip-greeter
 ```
 
-`--dry-run` is a real preflight, not just a stow rehearsal: the AUR and greeter
-steps do all their checking with reads, so a dry run runs those checks too.
+Packages, NVIDIA driver, Neovim, Nerd Fonts, theming, and every config symlinked
+into place with GNU Stow — but no display-manager change yet.
+
+**4. Reboot** — a new kernel or NVIDIA driver needs it:
+
+```bash
+reboot
+```
+
+**5. Confirm the desktop works, then enable the greeter.** You land at a TTY:
+
+```bash
+Hyprland                       # bring the desktop up by hand first
+nwg-hello -t                   # preview the greeter in a window, greetd untouched
+./scripts/install-greeter.sh   # install + enable greetd
+sudo systemctl start greetd    # draws it live on vt1; `stop` to back out
+```
+
+Don't skip the live check — see [Login screen](#login-screen) for what to watch
+for and how to roll back if it comes up black.
+
+**6. Reboot** into the greeter.
 
 Anything already in the way (a config from a previous setup) is moved to
-`~/.dotfiles-backup-<timestamp>/`, never overwritten.
+`~/.dotfiles-backup-<timestamp>/`, never overwritten. Other flags:
+`--skip-packages` (configs only, skips pacman/AUR/themes/nvim) and plain
+`./install.sh` (all of the above in one run, greeter included).
 
 > [!IMPORTANT]
 > **Never `pacman -Sy <pkg>`.** It's a partial upgrade — refreshes the databases,
@@ -212,15 +235,10 @@ than trusting them. Edit the files under `greeter/`, never the copies in `/etc`.
 > [!WARNING]
 > **This is the one step that can leave you without a graphical login.** The
 > plumbing is VM-tested, but a VM has no GPU and NVIDIA is exactly what it can't
-> check. Confirm it live before rebooting — none of this commits anything:
->
-> ```bash
-> nwg-hello -t                    # draws the real greeter in a window
-> ./install.sh --skip-greeter     # everything else, no display manager change
-> sudo systemctl start greetd     # takes vt1; you keep your shell
-> sudo systemctl stop greetd      # ...and back out
-> sudo journalctl -u greetd -b
-> ```
+> check. That's why the [Install](#install) steps enable it with a live check
+> (`nwg-hello -t`, then `systemctl start`/`stop greetd`) *before* you reboot —
+> none of which commits anything. If greetd comes up black, `journalctl -u greetd
+> -b` is the first place to look.
 
 **Rollback is the bootloader, not another greeter** — there's no second display
 manager here. At the GRUB menu press `e` and append `systemd.unit=multi-user.target`
