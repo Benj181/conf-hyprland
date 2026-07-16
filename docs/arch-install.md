@@ -106,86 +106,50 @@ and reconcile.
 
 ## 5. GRUB
 
-**archinstall gets this wrong, and this cost the most time on europa.** It builds
-`grubx64.efi` with its prefix pointing at `/boot/efi/grub` — a lowercase dir on
-the ESP — instead of `/boot/grub` on the root partition.
+**archinstall installs GRUB wrong — redo it.** It builds `grubx64.efi` with the
+prefix pointing at `/boot/efi/grub` on the ESP instead of `/boot/grub` on the
+root. The prefix is compiled into the binary and is where GRUB reads its config
+at boot, so you get a menu with no Windows, and editing `/boot/grub/grub.cfg`
+changes nothing.
 
-The prefix is compiled **into the binary**. It's where GRUB looks for its config
-and modules at boot. So GRUB reads a config on the ESP that lists Arch only,
-while the real one — the one os-prober fills in with Windows — sits at
-`/boot/grub/grub.cfg` and is never read.
-
-**Deleting the stray config does not fix it.** The prefix sends GRUB straight
-back to that path. The binary has to be rebuilt.
-
-Install it yourself, naming both directories explicitly:
+Reinstall it. `--boot-directory` is what rebuilds the prefix:
 
 ```bash
 sudo arch-chroot /mnt
-echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub    # so Windows appears in the menu
+echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub    # Windows in the menu
 grub-install --target=x86_64-efi --efi-directory=/boot/efi \
              --boot-directory=/boot --bootloader-id=GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-- `--efi-directory` — the ESP mount. Where the stub goes.
-- `--boot-directory` — where the config and modules go, **and what the prefix is
-  built from**. It defaults to `/boot`; pass it anyway. The default is exactly
-  what archinstall didn't get.
+Delete the stray config, and any old distro's boot chain — the firmware falls
+through to it and loads that instead:
 
-### Check the prefix — do this first, before anything else
+```bash
+sudo rm -rf /boot/efi/grub /boot/efi/EFI/ubuntu   # if present
+efibootmgr                                        # find the old distro's entry
+sudo efibootmgr -B -b 0005                        # delete it
+sudo efibootmgr -o 0001,0000                      # GRUB first, then Windows
+```
+
+Keep `EFI/Microsoft/` and `EFI/Boot/`.
+
+Verify — the prefix first, before anything else:
 
 ```bash
 strings /boot/efi/EFI/GRUB/grubx64.efi | grep -E '/boot.*grub'
-```
+#   (,gpt5)/boot/grub    correct
+#   /boot/efi/grub       wrong -- reinstall
 
-```
-(,gpt5)/boot/grub     correct — reads the config off the root partition
-/boot/efi/grub        wrong   — reinstall with the command above
-```
-
-This is the one command that names the fault. Everything else — no Windows in the
-menu, a menu that ignores your edits, a GRUB that looks stale — is a symptom that
-points somewhere else and wastes rounds. Diagnose the prefix, don't infer from
-behaviour.
-
-Use that pattern, not `grep boot/grub`: the broken prefix is `/boot/**efi**/grub`,
-which does not contain the substring `boot/grub`, so the obvious grep prints
-nothing on exactly the machine you're trying to diagnose. Plain `grep grub` buries
-it under a few hundred `grub_*` symbol names.
-
-The two halves live in **different filesystems**, which is what makes those
-symptoms so confusing:
-
-```
-/boot/efi/EFI/GRUB/grubx64.efi    stub             — ESP (FAT)
-/boot/grub/grub.cfg               config + modules — Arch root (ext4)
-```
-
-### Clear the leftovers
-
-An old distro leaves a boot chain the firmware will happily fall through to,
-loading its GRUB instead of your new one:
-
-```bash
-ls /boot/efi/EFI                        # Boot/ GRUB/ Microsoft/ + anything stale
-sudo rm -rf /boot/efi/EFI/ubuntu        # the old distro's dir, if there is one
-sudo rm -rf /boot/efi/grub              # the wrong-prefix config, if there is one
-
-efibootmgr                              # find the old distro's entry number
-sudo efibootmgr -B -b 0005              # delete it
-sudo efibootmgr -o 0001,0000            # GRUB first, then Windows
-```
-
-Keep `EFI/Microsoft/` (Windows) and `EFI/Boot/` (the removable-media fallback —
-on europa that's still an old Ubuntu shim; harmless, and not what boots you).
-
-### Then check, before rebooting
-
-```bash
 efibootmgr | grep -E "BootOrder|GRUB"        # GRUB entry exists, and is first
 sudo grep -c menuentry /boot/grub/grub.cfg   # >1, with Windows among them
 ```
+
+**Watch out:** deleting the stray config on its own does nothing — the prefix
+sends GRUB back to it. Rebuild the binary.
+
+**Watch out:** `grep boot/grub` matches nothing when the prefix is wrong —
+`/boot/efi/grub` doesn't contain `boot/grub`. Use the pattern above.
 
 ```bash
 exit
