@@ -202,6 +202,33 @@ sudo umount -R /mnt
 reboot          # remove the USB
 ```
 
+### What happens to the bootloader
+
+The ESP (`p1`) is **shared and never reformatted** — only `p6` was deleted — so
+it helps to separate the GRUB *program* in the ESP from the GRUB *config +
+kernels* that lived on Ubuntu's root:
+
+- **Deleting `p6` (§1)** killed Ubuntu's `grub.cfg` and kernels, but left the
+  ESP's `EFI/ubuntu/` stub pointing at a root that no longer exists. Harmless —
+  you install from the USB and never boot it again.
+- **archinstall (§5)** adds a new `EFI/GRUB/` beside the existing `EFI/Microsoft/`
+  and `EFI/ubuntu/`, writes a fresh `grub.cfg` on the Arch root, and creates a new
+  NVRAM **GRUB** boot entry as the default. It does not reformat the ESP or remove
+  the other entries.
+- **os-prober (§6)** finds Windows via `EFI/Microsoft/…/bootmgfw.efi` and adds it
+  to Arch's GRUB menu. Ubuntu doesn't return — its root is gone.
+
+| In the ESP | Fate |
+|---|---|
+| `EFI/GRUB/` (Arch) | new default bootloader |
+| `EFI/Microsoft/` (Windows) | untouched; shows in Arch's GRUB via os-prober |
+| `EFI/ubuntu/` (old GRUB) | orphaned, harmless — points at the deleted `p6`. Clean up later with `rm -rf /boot/efi/EFI/ubuntu` + `efibootmgr -B` on its stale NVRAM entry |
+
+Two things this depends on: the **install USB must be booted in UEFI mode** (not
+legacy/CSM), or `efibootmgr` can't write the GRUB entry; and if the firmware
+ignores the new entry on reboot, that's the "GRUB doesn't appear" fallback in
+[If it goes wrong](#if-it-goes-wrong).
+
 ## 7. First boot → the rice
 
 You land at a TTY login — no display manager yet, that's expected; the dotfiles
