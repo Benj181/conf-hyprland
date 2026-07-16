@@ -130,8 +130,10 @@ Anything already in the way (a config from a previous setup) is moved to
 > **Never `pacman -Sy <pkg>`.** It's a partial upgrade — refreshes the databases,
 > then installs against libraries the rest of the system hasn't caught up to — and
 > it breaks Arch systems. `packages.sh` uses one `pacman -Syu --needed`
-> transaction instead. `paru -Sy`
-> is the same trap.
+> transaction instead. Any AUR helper's `-Sy` is the same trap — which is one
+> reason there isn't one here: `brave-bin` is the only AUR package, and
+> `install-aur.sh` builds it with `makepkg` directly. Re-run that script to
+> update Brave; `pacman -Syu` won't.
 
 > [!NOTE]
 > This targets one machine (`europa`) — no hardware detection, no per-host
