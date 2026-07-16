@@ -124,6 +124,14 @@ theming=(
                                  # /usr/share/fonts, which the greeter can
                                  # read, so install-greeter.sh no longer has to
                                  # copy the font somewhere readable either.
+    noto-fonts-emoji             # Emoji are their own font, and the Nerd Font is
+                                 # not one. ttf-firacode-nerd covers U+23FB (the
+                                 # power glyph) because that is a Nerd Font
+                                 # codepoint, which makes this look handled --
+                                 # but nothing on a minimal Arch install covers
+                                 # U+1F5A5 or any other real emoji, so Discord,
+                                 # Brave and this repo's own README rendered them
+                                 # as blanks. Verified below.
     papirus-icon-theme
     gnome-themes-extra           # Provides Adwaita-dark, which
                                  # theme/.config/gtk-3.0/settings.ini names. It
@@ -368,5 +376,27 @@ done
     echo "Inspect with: fc-list : family | tr ',' '\\n' | grep -i fira" >&2
     exit 1
 }
+
+# ---------------------------------------------------------------------------
+# Prove emoji resolve to a font, by codepoint rather than by family name.
+#
+# A family check cannot answer this. The question is not "is Noto Color Emoji
+# installed", it is "does ANY font cover this character" -- and the failure is
+# the usual one: no error, just a blank where a glyph should be.
+#
+# U+1F5A5 is the probe on purpose. U+23FB, the power glyph, is covered by
+# ttf-firacode-nerd all on its own, because it is a Nerd Font codepoint -- so
+# probing with that one reports success on a machine with no emoji font at all.
+# That is not hypothetical: it is exactly what made this missing package look
+# handled here for so long, while every other emoji rendered as nothing.
+# ---------------------------------------------------------------------------
+echo "==> Verifying emoji coverage"
+if [ -z "$(fc-list ':charset=1F5A5' family 2>/dev/null)" ]; then
+    echo "    No installed font covers U+1F5A5." >&2
+    echo "    Emoji render as blanks in Discord, Brave and anything else." >&2
+    echo "    Check with: fc-list ':charset=1F5A5' family" >&2
+    exit 1
+fi
+echo "    OK: emoji resolve to $(fc-list ':charset=1F5A5' family 2>/dev/null | head -1 | cut -d, -f1)"
 
 echo "==> Packages done"
