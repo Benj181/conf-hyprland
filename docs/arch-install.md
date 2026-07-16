@@ -302,6 +302,7 @@ kernels an OS keeps on its own root:
 - **archinstall (§5)** adds a new `EFI/GRUB/` beside whatever's already in the ESP,
   writes a fresh `grub.cfg` on the Arch root, and creates a new NVRAM **GRUB** boot
   entry as the default. It does not reformat the ESP or remove other entries.
+  **That is true only because the config sets `"removable": false`** — see below.
 - **os-prober (§6)** re-adds any OS whose boot files survive — e.g. Windows via
   `EFI/Microsoft/…/bootmgfw.efi`. An OS whose root you deleted does not come back.
 
@@ -317,6 +318,18 @@ Two dependencies: the **install USB must be booted in UEFI mode** (not
 legacy/CSM), or `efibootmgr` can't write the GRUB entry; and if the firmware
 ignores the new entry on reboot, that's the "GRUB doesn't appear" fallback in
 [If it goes wrong](#if-it-goes-wrong).
+
+> [!IMPORTANT]
+> **`"removable": false` in the config is load-bearing on a shared ESP.**
+> archinstall's default is `true`, which runs `grub-install --removable`: GRUB
+> goes to `EFI/BOOT/BOOTX64.EFI` — the removable-media fallback path — and **no
+> NVRAM entry is created at all**. On a single-OS disk that still boots, via the
+> fallback. Here it doesn't: Windows' own NVRAM entry wins the BootOrder, so you
+> reboot straight into Windows and it looks exactly like Arch never installed.
+> It also overwrites `EFI/BOOT/BOOTX64.EFI`, which on many dual-boot ESPs is
+> Windows' own fallback copy. Measured both ways in a VM — with `false` you get
+> `EFI/GRUB/grubx64.efi` and a `GRUB` entry first in BootOrder, as described
+> above. If you edit the bootloader config in the TUI, don't drop this.
 
 ## 7. First boot → the rice
 
@@ -371,9 +384,19 @@ relocating the whole filesystem. Make that space its own partition mounted at
 
 ## What's untested
 
-Verified in an Arch VM: package resolution, the GO check against every case, the
-config against archinstall 4.4's parser, greetd running nwg-hello as `greeter`,
-and `sgdisk --new=0:0:0` filling free space without touching neighbours.
+Verified in an Arch VM against a rebuilt copy of europa's layout — shared ESP, an
+NTFS "Windows", an ext4 "old Linux", and the same gap at `p5`:
+
+- §1–§4 run verbatim: the shared ESP's `EFI/Microsoft` came through
+  byte-identical, `p3`/`p4` untouched, `sgdisk --new=0:0:0` filled the free space
+  and reused the **lowest** free number (`p5`, not `p7`).
+- The `wipefs` rule, tested by breaking it: skipping it makes §3 refuse with
+  `something lives here (filesystem)`, exactly as claimed.
+- The GO check against every case, including the serial test.
+- The config against archinstall 4.4's parser — which is what the current ISO
+  ships — and the bootloader placement measured with `removable` both ways.
+- A full `./install.sh` run: package resolution, the Nerd Font check, stow, and
+  every assert in `install-greeter.sh` against nwg-hello 0.4.5 / greetd 0.10.3.
 
 **Not testable without your hardware** — so §5–§7 are staged and manual: your GPU
 driver, your monitors, the firmware's GRUB/Secure Boot behaviour, and the reboot.

@@ -7,8 +7,22 @@
     "mountpoint": "/mnt"
   },
 
+  "_comment_bootloader": [
+    "removable:false is load-bearing on a shared ESP -- do not drop it.",
+    "archinstall's default is TRUE (BootloaderConfiguration in",
+    "lib/models/bootloader.py), which runs `grub-install --removable`: GRUB",
+    "lands in EFI/BOOT/BOOTX64.EFI, the removable-media fallback path, and NO",
+    "efibootmgr entry is created. On a single-OS disk that still boots, via the",
+    "fallback. On a disk that already has Windows it does not: Windows' own",
+    "NVRAM entry wins the BootOrder and you reboot straight into Windows,",
+    "looking exactly like Arch failed to install. It also overwrites",
+    "EFI/BOOT/BOOTX64.EFI, which on many dual-boot ESPs is Windows' fallback",
+    "copy. With false, GRUB installs to EFI/GRUB/ and takes the first NVRAM",
+    "slot -- which is what docs/arch-install.md describes."
+  ],
   "bootloader_config": {
-    "bootloader": "Grub"
+    "bootloader": "Grub",
+    "removable": false
   },
 
   "hostname": "europa",
@@ -27,7 +41,13 @@
     "type": "nm"
   },
 
-  "packages": ["git", "stow", "vim", "sudo", "os-prober"],
+  "_comment_packages": [
+    "openssh is here so `systemctl enable sshd` is actually possible before the",
+    "greeter reboot -- the README calls that cheap insurance, and it is, but",
+    "base does not ship openssh and there is no network to install it from if",
+    "the greeter comes up black."
+  ],
+  "packages": ["git", "stow", "vim", "sudo", "os-prober", "openssh"],
 
   "services": [],
   "custom_commands": []
