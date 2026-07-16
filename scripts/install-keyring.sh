@@ -66,6 +66,10 @@ DRY_RUN="${1:-0}"
 
 BACKUP_DIR="/etc/pam.d/backup-$(date +%Y%m%d-%H%M%S)"
 
+# Set when a PAM file is actually rewritten, so the summary can tell "you must
+# log in again" apart from "nothing happened".
+CHANGED=0
+
 run() {
     if [ "$DRY_RUN" -eq 1 ]; then
         echo "    would: $*"
@@ -200,6 +204,7 @@ install_pam() {
     run sudo cp -a "$path" "$BACKUP_DIR/"
     run sudo install -m 644 -o root -g root "$tmp" "$path"
     rm -f "$tmp"
+    CHANGED=1
 }
 
 install_pam /etc/pam.d/greetd 1
@@ -289,54 +294,69 @@ if [ "$DRY_RUN" -eq 1 ]; then
     exit 0
 fi
 
-cat <<EOF
+# ---------------------------------------------------------------------------
+# Report what to DO, not everything that could ever go wrong.
+#
+# This used to print every failure mode it knew about on every run -- forty
+# lines, most of them irrelevant, including when the honest answer was "nothing".
+# That buried the one line that mattered, and a summary nobody reads is worth
+# the same as no summary. The explanations did not get deleted; they belong in
+# this file's comments and in README, Keyring, where you go looking when
+# something IS wrong.
+#
+# So: ask the Secret Service what state it is actually in, and print only the
+# difference between that and correct.
+# ---------------------------------------------------------------------------
+keyring_state() {
+    [ -f "$KEYRING_DIR/login.keyring" ] || { echo missing; return 0; }
+    python3 - <<'PY' 2>/dev/null || echo unknown
+import sys
+import gi
+gi.require_version("Secret", "1")
+from gi.repository import Secret, GLib
 
-    Keyring wired into PAM. REBOOT to apply it -- not a logout.
+try:
+    svc = Secret.Service.get_sync(Secret.ServiceFlags.LOAD_COLLECTIONS)
+except GLib.Error as err:
+    # The service advertises the login collection but never exposed the object:
+    # the keyring was created after this daemon scanned for keyrings. Only a
+    # fresh daemon picks it up.
+    print("unexposed" if "No such secret collection" in err.message else "unknown")
+    sys.exit(0)
 
-    A logout does not end the keyring daemon: logind's KillUserProcesses is no
-    on Arch, and the daemon lives under user@1000.service, which outlives the
-    session. So logging back in hands your password to the same daemon that was
-    already running, in whatever state it was already in. That is not a
-    theoretical concern -- it is why the first attempt at this on europa failed.
+for c in svc.get_collections():
+    if c.get_object_path().endswith("/collection/login"):
+        print("locked" if c.get_locked() else "ok")
+        sys.exit(0)
+print("unexposed")
+PY
+}
 
-    Verify after the reboot. Both should be silent:
+echo
+case "$(keyring_state)" in
+    ok)
+        if [ "$CHANGED" -eq 1 ]; then
+            echo "==> PAM updated. Log out and back in to apply it."
+        else
+            echo "==> Nothing to do: the login keyring is unlocked and working."
+        fi
+        ;;
+    missing)
+        echo "==> Log in twice. The first login creates the login keyring; the"
+        echo "    second is when apps can see it. See README, Keyring."
+        ;;
+    unexposed)
+        echo "==> Log in once more. The login keyring is fine, but this session's"
+        echo "    daemon started before it existed, so apps cannot see it yet."
+        ;;
+    locked)
+        echo "==> Log out and back in: the login keyring is locked."
+        ;;
+    *)
+        echo "==> Log out and back in, then re-run this to confirm."
+        ;;
+esac
 
-        journalctl -b | grep gkr-pam
-        ls ~/.local/share/keyrings/login.keyring
-
-    THE FIRST LOGIN IS THE ODD ONE OUT. If there was no login keyring before,
-    PAM creates it during that login -- and the daemon only exposes collections
-    it found when it STARTED, which was moments earlier, when there was nothing
-    to find. So in that one session the keyring exists on disk and is unlocked,
-    the alias resolves, and apps still cannot see it:
-
-        No such secret collection at path: /org/freedesktop/secrets/collection/login
-
-    An app that asks for a secret then offers to create a keyring, which looks
-    exactly like none of this worked. It is not broken and nothing needs fixing:
-    the next daemon start picks the keyring up. Log in once more, or:
-
-        systemctl --user restart gnome-keyring-daemon.service   # then log in again
-
-    Check which state you are in -- Login should be present and locked=False:
-
-        python3 -c 'import gi; gi.require_version("Secret","1")
-        from gi.repository import Secret
-        s = Secret.Service.get_sync(Secret.ServiceFlags.LOAD_COLLECTIONS)
-        [print(c.get_label(), "locked=%s" % c.get_locked()) for c in s.get_collections()]'
-
-    If gkr-pam says something, read these two before believing it:
-
-      "no password is available for user"
-          The auth line is not seeing PAM_AUTHTOK -- it is above
-          'auth include system-local-login' rather than below it. This script
-          places it; a warning here means something else moved it back.
-
-      "the password for the login keyring was invalid"
-          Probably NOT the password. gkr-pam reports every unlock failure this
-          way, including "I could not write the file". Ask the daemon instead,
-          which says what actually happened:
-              journalctl -b -t gnome-keyring-daemon
-
-    Originals are in $BACKUP_DIR if you need to back out.
-EOF
+if [ "$CHANGED" -eq 1 ]; then
+    echo "    Previous /etc/pam.d files: $BACKUP_DIR"
+fi
