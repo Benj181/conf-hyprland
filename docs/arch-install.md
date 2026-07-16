@@ -65,8 +65,13 @@ Set these now; the rest of the doc uses them:
 ```bash
 DISK=/dev/nvme0n1          # the whole disk, NOT a partition
 ESP=/dev/nvme0n1p1         # the EFI System partition
-EXPECT_SERIAL=23180XXXXXXX # the SERIAL of $DISK from the table above — §3 checks it
+EXPECT_SERIAL=50026B76862FEDFB   # SERIAL of $DISK from the table above — §3 checks it
 ```
+
+These three are **europa's** — `EXPECT_SERIAL` is its Kingston KC3000's, measured
+2026-07-16. On any other machine all three are wrong, and the serial is wrong in
+the safe direction: §3 prints `NO-GO ... WRONG DISK` rather than proceeding. Read
+your own off the `lsblk` table above; don't delete the check to get past it.
 
 europa's layout, as an example (measured 2026-07-16):
 
