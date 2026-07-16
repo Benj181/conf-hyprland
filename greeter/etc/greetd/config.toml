@@ -28,9 +28,8 @@
 
 [terminal]
 # The VT here and greetd.service's `Conflicts=` must name the same tty, or
-# greetd and a getty fight over it. This was vt = 7 on Ubuntu, whose packaging
-# conflicted with getty@tty7; upstream greetd, which Arch ships close to
-# unmodified, conflicts with getty@tty1.
+# greetd and a getty fight over it. Arch ships greetd close to upstream, which
+# conflicts with getty@tty1.
 #
 # install-greeter.sh checks this pairing against the installed unit instead of
 # trusting the line above -- it cannot be verified anywhere but on the machine
@@ -48,9 +47,7 @@ command = "/usr/bin/start-hyprland -- -c /etc/nwg-hello/hyprland.conf"
 
 # greetd creates this account from /usr/lib/sysusers.d/greetd.conf when the
 # package installs. nwg-hello's own source assumes this exact name -- main.py
-# and tools.py both gate on os.getenv("USER") == "greeter" -- so on Debian and
-# Ubuntu, where the account is `_greetd`, nwg-hello's --log flag was silently a
-# no-op.
+# and tools.py both gate on os.getenv("USER") == "greeter".
 #
 # sysusers does not necessarily add it to `video`, which it needs to open a DRM
 # device; without that you get a black screen at boot.

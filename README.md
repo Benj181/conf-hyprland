@@ -66,8 +66,8 @@
 
 > [!NOTE]
 > **No Arch yet?** Install it first with **[docs/arch-install.md](docs/arch-install.md)**
-> — it replaces Ubuntu without touching the Windows partition sharing the disk,
-> and hands off to the steps below at the first TTY login.
+> — it installs into free space on a disk that already holds another OS without
+> disturbing it, and hands off to the steps below at the first TTY login.
 
 Do it **staged**, not in one shot: install everything *except* the login screen
 first, reboot to confirm the desktop actually comes up on your GPU, and only then
@@ -129,8 +129,8 @@ Anything already in the way (a config from a previous setup) is moved to
 > [!IMPORTANT]
 > **Never `pacman -Sy <pkg>`.** It's a partial upgrade — refreshes the databases,
 > then installs against libraries the rest of the system hasn't caught up to — and
-> it breaks Arch systems. (`apt update && apt install` is fine; this isn't.)
-> `packages.sh` uses one `pacman -Syu --needed` transaction instead. `paru -Sy`
+> it breaks Arch systems. `packages.sh` uses one `pacman -Syu --needed`
+> transaction instead. `paru -Sy`
 > is the same trap.
 
 > [!NOTE]

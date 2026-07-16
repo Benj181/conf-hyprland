@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # scripts/install-aur.sh
 # The one package this setup needs that Arch does not carry in its own repos:
-# brave-bin. Everything else -- including nwg-hello and hyprshot, which had to
-# be worked around on Ubuntu -- comes from extra.
+# brave-bin. Everything else -- including nwg-hello and hyprshot -- comes from
+# the extra repo.
 #
 # ORDER MATTERS. This must run after scripts/packages.sh:
 #
@@ -94,9 +94,8 @@ echo "==> Installing AUR packages"
 # package here that talks to the whole internet.
 run paru -S --needed --noconfirm brave-bin
 
-# The binary is `brave`, not `brave-browser` as it was from Brave's apt repo.
-# hypr/.config/hypr/keybinds.conf names it; a mismatch is a keybind that
-# silently does nothing.
+# The binary is `brave`, not `brave-browser`. hypr/.config/hypr/keybinds.conf
+# names it; a mismatch is a keybind that silently does nothing.
 if [ "$DRY_RUN" -eq 0 ]; then
     command -v brave >/dev/null || {
         echo "==> brave-bin installed but no 'brave' on PATH" >&2

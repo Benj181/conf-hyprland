@@ -3,9 +3,8 @@
 # Moves anything that would collide with stow out of the way.
 #
 # stow refuses to overwrite existing files and reports it in a way that is hard
-# to act on. The known collisions on a machine that predates this repo are
-# ~/.config/nvim (conf-nvim cloned directly) and ~/.config/kitty/kitty.conf (a
-# hand-made symlink into it).
+# to act on. Typical collisions are a pre-existing ~/.config/nvim directory from
+# an earlier setup, or a hand-made ~/.config/kitty/kitty.conf symlink.
 #
 # Deliberately not `stow --adopt`: adopt pulls stray files *into* the repo and
 # overwrites the committed versions with them. That is the opposite of what is
@@ -78,9 +77,8 @@ for c in "${conflicts[@]}"; do
     mv "$c" "$dest"
 done
 
-# ~/.config/nvim is a git clone of conf-nvim, now absorbed into this repo. Its
-# whole directory is stale once the nvim package is stowed, but only move it if
-# nothing of value is left behind.
+# A pre-existing ~/.config/nvim directory from an earlier setup is stale once the
+# nvim package is stowed, but only remove it if nothing of value is left behind.
 if [ -d "$HOME/.config/nvim" ] && [ -z "$(ls -A "$HOME/.config/nvim" 2>/dev/null)" ]; then
     rmdir "$HOME/.config/nvim"
 fi

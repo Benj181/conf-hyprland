@@ -11,8 +11,7 @@
 # `pacman -Sy <pkg>` is a PARTIAL UPGRADE: it refreshes the package databases
 # and then installs a package built against library versions the rest of the
 # system has not upgraded to yet. Arch does not support this and it breaks
-# systems. There is no apt analogue -- `apt update && apt install` is fine,
-# this is not -- so it is the one genuinely new rule this file exists to obey.
+# systems -- so this file goes out of its way to never do it.
 #
 # Everything therefore goes into ONE `pacman -Syu --needed` transaction:
 # databases refreshed, whole system brought current, new packages installed,
@@ -40,9 +39,9 @@ core=(
     hypridle
     hyprpolkitagent
     # hyprland-qtutils is NOT here: it exists in neither Arch's repos nor the
-    # AUR. It came over from the Ubuntu list, nothing in this repo ever
-    # referenced it, and pacman aborts the whole transaction on one unknown
-    # target -- so carrying it would have installed nothing at all.
+    # AUR, nothing in this repo references it, and pacman aborts the whole
+    # transaction on one unknown target -- so carrying it would have installed
+    # nothing at all.
     xdg-desktop-portal-hyprland  # Only an optdepend of hyprland on Arch, but
     xdg-desktop-portal-gtk       # theme/.config/gtk-4.0/settings.ini and
                                  # install-themes.sh both document the portal
@@ -52,9 +51,9 @@ core=(
                                  # not exist.
     waybar
     rofi                         # 2.0.0 and wayland-native (it provides and
-                                 # replaces rofi-wayland). Ubuntu shipped 1.7.x.
+                                 # replaces rofi-wayland).
     kitty
-    mako                         # was: mako-notifier
+    mako
     nautilus
     wl-clipboard
     cliphist
@@ -62,11 +61,9 @@ core=(
     pipewire-pulse
     wireplumber
     pavucontrol
-    networkmanager               # Ubuntu had the daemon by default; a minimal
-    network-manager-applet       # Arch install does not. Without it waybar's
-                                 # network module and its nm-connection-editor
-                                 # on-click are dead icons.
-                                 # was: network-manager-gnome
+    networkmanager               # A minimal Arch install has no network daemon.
+    network-manager-applet       # Without it waybar's network module and its
+                                 # nm-connection-editor on-click are dead icons.
     bluez                        # Same story: blueman is only a frontend.
     bluez-utils
     blueman
@@ -78,7 +75,7 @@ core=(
                                  # shebang check and the /usr/local/bin install
                                  # are all gone.
     jq
-    libnotify                    # was: libnotify-bin
+    libnotify
     stow
     git                          # also required by install-aur.sh
 )
@@ -86,9 +83,8 @@ core=(
 # Login screen. See scripts/install-greeter.sh.
 #
 # greetd creates the `greeter` account from /usr/lib/sysusers.d/greetd.conf at
-# install time -- not Debian's `_greetd`. nwg-hello's own source assumes that
-# name (main.py and tools.py both gate on os.getenv("USER") == "greeter"), so
-# on Ubuntu its --log flag was silently a no-op.
+# install time. nwg-hello's own source assumes that exact name (main.py and
+# tools.py both gate on os.getenv("USER") == "greeter").
 login=(
     greetd
     nwg-hello                    # 0.4.5. This repo's CSS and template edit
@@ -100,8 +96,7 @@ login=(
 # Theming.
 #
 # ttf-fira-code is deliberately NOT installed: it provides "Fira Code" with no
-# Nerd glyphs, which is not what any config here asks for. Same trap as
-# Ubuntu's fonts-firacode, different spelling.
+# Nerd glyphs, which is not what any config here asks for.
 theming=(
     ttf-firacode-nerd            # 3.4.0 -- the same Nerd Fonts release this
                                  # repo used to unzip by hand. Lands in
@@ -126,8 +121,8 @@ theming=(
                                  # dark mode. With no dconf it writes to the
                                  # memory backend and the values evaporate at
                                  # logout, which is worse: it reports success.
-                                 # Both are guaranteed on Ubuntu and merely
-                                 # likely-transitive here.
+                                 # Both are only likely-transitive here, so they
+                                 # are named outright.
     qt5ct
     qt6ct
     nwg-look
@@ -135,20 +130,15 @@ theming=(
 
 # Neovim toolchain.
 #
-# neovim itself is now just a package: extra has 0.12.4, which is exactly what
-# this config targets and exactly what this repo used to fetch as a tarball
-# into /opt/nvim because apt only had 0.11.6. The tarball, the version pin and
-# the PATH-shadowing warning it needed are all gone.
+# neovim is just a package: extra has 0.12.4, which is exactly what this config
+# targets.
 nvim=(
     neovim
     ripgrep
-    fd                           # was: fd-find. Arch ships the binary as `fd`,
-                                 # so the ~/.local/bin/fd symlink this script
-                                 # used to create is gone with it.
+    fd                           # Arch ships the binary as `fd`.
     fzf
-    base-devel                   # was: build-essential. Also what makepkg
-                                 # needs, so install-aur.sh depends on this
-                                 # having run first.
+    base-devel                   # what makepkg needs, so install-aur.sh depends
+                                 # on this having run first.
     python
     python-pip
     # python3-venv has no counterpart here: venv ships inside `python`.
@@ -163,8 +153,8 @@ nvim=(
 # kernel ever changes this must change with it: linux-lts -> nvidia-open-lts,
 # anything else -> nvidia-open-dkms plus the matching headers.
 nvidia=(
-    nvidia-open                  # was: nvidia-driver-595-open
-    egl-wayland                  # was: libnvidia-egl-wayland1
+    nvidia-open
+    egl-wayland
 )
 
 # ---------------------------------------------------------------------------
@@ -198,9 +188,9 @@ echo "==> Full system upgrade and install (one pacman transaction)"
 sudo pacman -Syu --needed --noconfirm \
     "${core[@]}" "${login[@]}" "${theming[@]}" "${nvim[@]}" "${nvidia[@]}"
 
-# Services Ubuntu enabled for us and a minimal Arch install does not. blueman
-# and waybar's network/bluetooth modules are frontends -- without the daemons
-# they are dead icons.
+# A minimal Arch install does not enable these. blueman and waybar's
+# network/bluetooth modules are frontends -- without the daemons they are dead
+# icons.
 echo "==> Enabling NetworkManager and bluetooth"
 sudo systemctl enable --now NetworkManager.service
 sudo systemctl enable --now bluetooth.service
@@ -208,19 +198,15 @@ sudo systemctl enable --now bluetooth.service
 # ---------------------------------------------------------------------------
 # Prove the font landed, rather than assuming the package did what it says.
 #
-# This repo used to download FiraCode.zip itself, because apt's fonts-firacode
-# was the wrong font entirely -- no Nerd glyphs, so bar icons rendered as tofu.
-# ttf-firacode-nerd is that same v3.4.0 release, so the download is gone. The
-# check is not: a font GTK cannot find does not error, it silently falls back,
-# and that is the bug this whole repo keeps tripping over. A package being
-# installed is not the same claim as the family being findable under the name
-# the configs use.
+# ttf-firacode-nerd provides the families the configs name -- but a package
+# being installed is not the same claim as the family being findable under that
+# name. A font GTK cannot find does not error, it silently falls back, and that
+# is the bug this whole repo keeps tripping over. So verify rather than assume.
 #
 # Exact family match: "FiraCode Nerd Font" is a substring of "FiraCode Nerd
 # Font Mono", so a plain substring grep would report success while the
 # proportional family is still missing -- the exact bug this check exists to
-# catch. ttf-firacode-nerd also ships a "Propo" family, which makes -Fx matter
-# more here than it did on Ubuntu, not less.
+# catch. ttf-firacode-nerd also ships a "Propo" family, which makes -Fx matter.
 #
 # The here-string is deliberate: `... | grep -Fxq` under `set -o pipefail`
 # returns 141, not 0, *when it matches*. grep -q exits on the first hit, the

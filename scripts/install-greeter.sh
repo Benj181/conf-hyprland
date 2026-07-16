@@ -23,20 +23,15 @@
 #
 # WHY SO MANY ASSERTS
 #
-# This was ported from Ubuntu, where the Arch facts it depends on could not be
-# checked. Rather than encode guesses in comments -- where being wrong costs a
-# black screen and still reads as documentation -- each one is checked here, at
-# install time, failing with the command that reveals the truth.
+# The Arch facts these steps depend on are checked here, at install time, rather
+# than encoded as comments -- where being wrong costs a black screen and still
+# reads as documentation. Each assert fails with the command that reveals the
+# truth.
 #
-# They have since been run against a real Arch VM (nwg-hello 0.4.5, greetd
-# 0.10.3) and all pass, so on a healthy system they are quiet. That is the
-# point: an assert that fires is telling you the machine disagrees with what
-# this repo believes, and the belief is what is out of date. Read it rather
-# than working around it.
-#
-# One of them was wrong when written, and the VM is how that was found: an
-# earlier draft claimed Arch boots to multi-user.target so greetd would never
-# start. It does not -- see the default-target block near the end.
+# They have been run against a real Arch VM (nwg-hello 0.4.5, greetd 0.10.3) and
+# all pass, so on a healthy system they are quiet. That is the point: an assert
+# that fires is telling you the machine disagrees with what this repo believes,
+# and the belief is what is out of date. Read it rather than working around it.
 #
 # THE FORM IS ON ONE MONITOR ON PURPOSE
 #
@@ -111,10 +106,9 @@ missing_dep() {
     exit 1
 }
 
-# "Is the package installed" is the question actually being asked. Asking PATH
-# instead was an Ubuntu habit: greetd lived in /usr/sbin there, which is not on
-# a normal PATH. Arch is usr-merged and greetd is /usr/bin/greetd, so the old
-# /usr/sbin fallback was dead code either way.
+# "Is the package installed" is the question actually being asked -- not "is it
+# on PATH". Arch is usr-merged and greetd is /usr/bin/greetd, so a PATH check
+# would work, but pacman -Qq answers the real question directly.
 for pkg in greetd nwg-hello; do
     if ! pacman -Qq "$pkg" >/dev/null 2>&1; then
         missing_dep "$pkg not installed; run scripts/packages.sh first"
@@ -159,9 +153,9 @@ fi
 # ---------------------------------------------------------------------------
 # ASSERT: config.toml's vt matches what greetd.service keeps clear.
 #
-# If they disagree, greetd and a getty fight over the same VT. Ubuntu's
-# packaging conflicted with getty@tty7; upstream greetd conflicts with
-# getty@tty1. This cannot be verified from anywhere but this machine.
+# If they disagree, greetd and a getty fight over the same VT. Upstream greetd
+# conflicts with getty@tty1. This cannot be verified from anywhere but this
+# machine.
 #
 # Here-string, not a pipe: `systemctl show | grep -Fq` under pipefail returns
 # 141 when it matches.
@@ -282,8 +276,8 @@ else
     # `set -e` would kill the script on the usermod that follows. This repo has
     # shipped that bug twice already.
     #
-    # This needs no change from the Ubuntu version and is correct whether or
-    # not Arch's sysusers file already adds greeter to video: it checks first.
+    # Correct whether or not Arch's sysusers file already adds greeter to the
+    # video group: it checks membership first.
     greeter_groups="$(id -nG greeter 2>/dev/null | tr ' ' '\n')"
     if ! grep -Fxq video <<<"$greeter_groups"; then
         echo "    adding greeter to the video group"
@@ -303,14 +297,11 @@ fi
 # ---------------------------------------------------------------------------
 # Prove `greeter` can actually read what it needs.
 #
-# This replaces the font-copy step. That step existed because the font lived in
-# ~/.local/share/fonts and _greetd could not traverse /home/baas; with the font
-# now coming from ttf-firacode-nerd in /usr/share/fonts there is nothing to
-# copy. But its real point was that a font GTK cannot find does not error -- it
-# falls back silently -- so what replaces the copy is the check the copy never
-# did: ask `greeter`, not baas -- it is `greeter` that has to find the font, and
-# it is the only user whose view of /home/baas (750) differs from yours. Arch's
-# sysusers gives greeter a real /bin/bash shell, so `sudo -u` just works.
+# A font GTK cannot find does not error -- it falls back silently. So rather than
+# trust that `greeter` can see the font, ask it directly: `greeter` is the user
+# that has to find it, and the only one whose view of /home/baas (750) differs
+# from yours. Arch's sysusers gives greeter a real /bin/bash shell, so `sudo -u`
+# just works.
 # ---------------------------------------------------------------------------
 if [ "$DRY_RUN" -eq 0 ] && getent passwd greeter >/dev/null; then
     echo "    checking what greeter can read"
@@ -364,8 +355,8 @@ else
 fi
 
 # `--force` is defensive rather than load-bearing: on a minimal Arch install
-# nothing else claims display-manager.service, so there is no gdm3 to take the
-# alias from. It keeps a re-run idempotent if anything ever does.
+# nothing else claims display-manager.service, so there is no other display
+# manager to take the alias from. It keeps a re-run idempotent if anything ever does.
 echo "    enabling greetd"
 run sudo systemctl enable --force greetd.service
 
@@ -400,9 +391,8 @@ cat <<'EOF'
         sudo systemctl stop greetd                  # ...and backs out again
         sudo journalctl -u greetd -b
 
-    ROLLBACK IS THE BOOTLOADER, NOT ANOTHER GREETER. On Ubuntu the escape
-    hatch was `systemctl enable --force gdm3`, because gdm3 was still
-    installed. There is no second display manager here, so:
+    ROLLBACK IS THE BOOTLOADER, NOT ANOTHER GREETER. There is no second
+    display manager installed to fall back to, so:
 
         At the boot menu press `e` and append to the kernel line:
             systemd.unit=multi-user.target

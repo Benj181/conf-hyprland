@@ -2,8 +2,8 @@
 # scripts/bootstrap-nvim.sh
 # Installs the Neovim plugin set headlessly.
 #
-# Replaces conf-nvim's README step of "launch nvim, let lazy install plugins,
-# ignore any errors and restart once it finishes".
+# Installs the plugins up front, instead of relying on an interactive first
+# launch of nvim to let lazy install them.
 
 set -euo pipefail
 

@@ -24,9 +24,9 @@ echo "==> Applying GTK interface settings"
 # set_key below reports "skipped (not writable)" and carries on, which is the
 # right response to one unwritable key and the wrong response to the schema not
 # being installed at all: every key would skip and the install would finish
-# green with no dark mode anywhere. Ubuntu guaranteed
-# gsettings-desktop-schemas; on Arch it is only likely-transitive, so
-# scripts/packages.sh names it outright and this refuses to pretend otherwise.
+# green with no dark mode anywhere. gsettings-desktop-schemas is only
+# likely-transitive on Arch, so scripts/packages.sh names it outright and this
+# refuses to pretend otherwise.
 #
 # dconf matters just as much and fails worse: without it gsettings writes to
 # the memory backend, every key reports success, and the values evaporate at

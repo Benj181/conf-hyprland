@@ -4,7 +4,7 @@ Installs Arch onto a GPT disk that already holds **another OS (or data you want 
 keep)**, into free space, without disturbing what's already there. Then it hands
 over to the dotfiles' `install.sh` for the desktop.
 
-`europa` (Windows + Ubuntu on one NVMe) is the worked example — **substitute your
+`europa` (Windows plus an old Linux install on one NVMe) is the worked example — **substitute your
 own disk and partition names throughout**; the doc sets them as variables so you
 only type each once. The other OS doesn't have to be Windows, and there doesn't
 have to be a second one.
@@ -19,8 +19,7 @@ have to be a second one.
 - [ ] Arch ISO on a USB stick, **booted in UEFI mode** (pick the `UEFI:` entry
       for the stick in the firmware boot menu). If you use Secure Boot, turn it
       **off** for now — see [Secure Boot](#secure-boot).
-- [ ] **Dotfiles pushed to GitHub** — branch `arch-linux`, at
-      <https://github.com/Benj181/conf-hyprland/tree/arch-linux>.
+- [ ] **Dotfiles pushed to GitHub** — <https://github.com/Benj181/conf-hyprland>.
 - [ ] **A fallback you can boot** — your existing OS if you dual-boot, or just a
       way to re-flash the USB and retry. Confirm you can reach it.
 - [ ] You know the firmware boot-menu key (usually F11/F12/Del at POST).
@@ -77,7 +76,7 @@ europa's layout, as an example (measured 2026-07-16):
 | `p2` | 16M | MS reserved | untouched |
 | `p3` | 1.4T | ntfs — **Windows** | untouched |
 | `p4` | 894M | Windows recovery | untouched |
-| `p6` | 500G | ext4 — **Ubuntu** | **→ becomes the free space** |
+| `p6` | 500G | ext4 — **old Linux** | **→ becomes the free space** |
 
 > [!NOTE]
 > Dual-booting **BitLocker-encrypted** Windows? A partition or boot change can
@@ -209,7 +208,7 @@ the wrong partition — unmount and stop; **do not format it.**
 ## 5. archinstall
 
 ```bash
-curl -fLO https://raw.githubusercontent.com/Benj181/conf-hyprland/arch-linux/docs/archinstall-europa.json
+curl -fLO https://raw.githubusercontent.com/Benj181/conf-hyprland/main/docs/archinstall-europa.json
 archinstall --config archinstall-europa.json
 ```
 
@@ -306,13 +305,13 @@ kernels an OS keeps on its own root:
 - **os-prober (§6)** re-adds any OS whose boot files survive — e.g. Windows via
   `EFI/Microsoft/…/bootmgfw.efi`. An OS whose root you deleted does not come back.
 
-On europa specifically:
+Example — replacing a Linux install that shared the disk with Windows:
 
 | In the ESP | Fate |
 |---|---|
 | `EFI/GRUB/` (Arch) | new default bootloader |
 | `EFI/Microsoft/` (Windows) | untouched; shows in Arch's GRUB via os-prober |
-| `EFI/ubuntu/` (old GRUB) | orphaned, harmless — points at the deleted partition. Clean up later with `rm -rf /boot/efi/EFI/ubuntu` + `efibootmgr -B` on its stale NVRAM entry |
+| `EFI/<old-distro>/` (its old GRUB) | orphaned, harmless — points at the deleted partition. Clean up later with `rm -rf` on that dir + `efibootmgr -B` on its stale NVRAM entry |
 
 Two dependencies: the **install USB must be booted in UEFI mode** (not
 legacy/CSM), or `efibootmgr` can't write the GRUB entry; and if the firmware
@@ -329,7 +328,6 @@ picks up here:
 sudo pacman -Syu                 # confirm network + mirrors work
 git clone https://github.com/Benj181/conf-hyprland.git ~/hyprland-dotfiles
 cd ~/hyprland-dotfiles
-git checkout arch-linux
 
 ./install.sh --dry-run           # runs every check, writes nothing
 ./install.sh --skip-greeter      # packages + configs, no display manager yet
