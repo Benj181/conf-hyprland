@@ -19,13 +19,10 @@ have to be a second one.
 - [ ] Arch ISO on a USB stick, **booted in UEFI mode** (pick the `UEFI:` entry
       for the stick in the firmware boot menu). If you use Secure Boot, turn it
       **off** for now — see [Secure Boot](#secure-boot).
-- [ ] **Dotfiles pushed to GitHub** — <https://github.com/Benj181/conf-hyprland>.
 - [ ] **A fallback you can boot** — your existing OS if you dual-boot, or just a
       way to re-flash the USB and retry. Confirm you can reach it.
-- [ ] You know the firmware boot-menu key (usually F11/F12/Del at POST).
 - [ ] A GPT disk with free space, or a partition/disk you're willing to erase to
       make some (§1).
-- [ ] Anything you want off the partition you're about to reuse is backed up.
 
 ## The three safety rules
 
