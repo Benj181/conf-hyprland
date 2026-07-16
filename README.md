@@ -317,6 +317,13 @@ Three things that look like bugs and aren't:
   session. Logging back in hands your password to the *same daemon that was
   already running* — a daemon started before any of this was configured is the
   one that will handle your next login.
+- **The first login after setup doesn't fully work, and that's expected.** The
+  daemon only exposes keyrings that existed when it *started*; PAM creates
+  `login.keyring` during that same login, moments too late. So the keyring is on
+  disk and unlocked, `gkr-pam` says `unlocked login keyring`, and apps still get
+  `No such secret collection at path: .../collection/login` and offer to create a
+  keyring — which looks identical to total failure. Log in once more and it's
+  correct from then on.
 - **`passwd` does not re-key the keyring.** Nothing here touches
   `/etc/pam.d/passwd`, so changing your login password silently breaks
   auto-unlock until you re-key it in seahorse. Add `password optional

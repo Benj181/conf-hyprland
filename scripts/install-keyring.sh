@@ -304,6 +304,27 @@ cat <<EOF
         journalctl -b | grep gkr-pam
         ls ~/.local/share/keyrings/login.keyring
 
+    THE FIRST LOGIN IS THE ODD ONE OUT. If there was no login keyring before,
+    PAM creates it during that login -- and the daemon only exposes collections
+    it found when it STARTED, which was moments earlier, when there was nothing
+    to find. So in that one session the keyring exists on disk and is unlocked,
+    the alias resolves, and apps still cannot see it:
+
+        No such secret collection at path: /org/freedesktop/secrets/collection/login
+
+    An app that asks for a secret then offers to create a keyring, which looks
+    exactly like none of this worked. It is not broken and nothing needs fixing:
+    the next daemon start picks the keyring up. Log in once more, or:
+
+        systemctl --user restart gnome-keyring-daemon.service   # then log in again
+
+    Check which state you are in -- Login should be present and locked=False:
+
+        python3 -c 'import gi; gi.require_version("Secret","1")
+        from gi.repository import Secret
+        s = Secret.Service.get_sync(Secret.ServiceFlags.LOAD_COLLECTIONS)
+        [print(c.get_label(), "locked=%s" % c.get_locked()) for c in s.get_collections()]'
+
     If gkr-pam says something, read these two before believing it:
 
       "no password is available for user"
