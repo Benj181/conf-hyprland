@@ -151,6 +151,10 @@ sends GRUB back to it. Rebuild the binary.
 **Watch out:** `grep boot/grub` matches nothing when the prefix is wrong —
 `/boot/efi/grub` doesn't contain `boot/grub`. Use the pattern above.
 
+**Watch out:** re-running `grub-install` later invalidates a Secure Boot setup —
+new binary, no signature. If you've done [Secure Boot](#secure-boot), re-sign
+after every one.
+
 ```bash
 exit
 sudo umount -R /mnt
@@ -185,19 +189,94 @@ sudo systemctl start greetd      # live, from a TTY, before committing
 Install with it **off** (ASUS: *Boot → Secure Boot → OS Type → Other OS*; leave
 CSM alone). Arch runs fine without it.
 
-Need it on afterwards — Windows anti-cheat, say — then sign the boot chain:
+Need it on afterwards — Windows anti-cheat, say — then enrol your own keys and
+sign the boot chain. Arch ships nothing Microsoft-signed, so there's no shortcut;
+you become the CA. Windows keeps booting because Microsoft's keys go in alongside
+yours.
+
+Four steps, and **§3 is the one everybody misses**.
+
+### 1. Setup Mode
+
+Enrolling keys needs the firmware's factory keys cleared (ASUS: *Boot → Secure
+Boot → Key Management → Clear Secure Boot Keys*). Leave Secure Boot itself off
+until §4.
 
 ```bash
-sbctl create-keys
-sbctl enroll-keys -m             # -m keeps Microsoft's keys, or Windows won't boot
-sbctl sign -s /boot/efi/EFI/GRUB/grubx64.efi
-sbctl sign -s /boot/vmlinuz-linux
-sbctl verify
-# then re-enable Secure Boot in firmware
+sudo pacman -S sbctl
+sudo sbctl status                # Setup Mode: Enabled, Vendor Keys: none
 ```
 
-Enrolling needs the firmware in Setup Mode. If a signed setup won't boot, turn
-Secure Boot off again and retry.
+### 2. Enrol your keys
+
+```bash
+sudo sbctl create-keys
+sudo sbctl enroll-keys -m        # -m keeps Microsoft's keys, or Windows won't boot
+```
+
+Enrolling a PK exits Setup Mode on its own — `status` flipping to *Setup Mode:
+Disabled* here is the success case, not a problem.
+
+### 3. Rebuild GRUB without shim_lock
+
+Arch's `grubx64.efi` has the **shim_lock verifier compiled in**. It demands
+shim's EFI protocol before GRUB will load anything — its own modules, the kernel,
+the initramfs. You don't have shim; you have your own keys. So every load fails
+and GRUB drops to a rescue prompt:
+
+```
+error: verification requested but nobody cares: /boot/grub/x86_64-efi/normal.mod
+```
+
+Signing more files can't fix this. `initramfs-linux.img` and `intel-ucode.img`
+are cpio archives, not PE binaries — they cannot be signed at all. Rebuild the
+binary without the verifier instead:
+
+```bash
+sudo grub-install --target=x86_64-efi --efi-directory=/boot/efi \
+                  --boot-directory=/boot --bootloader-id=GRUB \
+                  --modules="tpm" --disable-shim-lock
+```
+
+Same paths as §5, so it stays one `grubx64.efi` and one NVRAM entry — no
+duplicate. `grub.cfg` is untouched and needs no regenerating.
+
+### 4. Sign, then turn it on
+
+`grub-install` writes a fresh unsigned binary, so signing comes **after** it:
+
+```bash
+sudo sbctl sign -s /boot/efi/EFI/GRUB/grubx64.efi
+sudo sbctl sign -s /boot/vmlinuz-linux
+sudo sbctl verify
+# re-enable Secure Boot in firmware, reboot
+sudo sbctl status                # Secure Boot: Enabled, Setup Mode: Disabled
+```
+
+Then boot **Windows** from the GRUB menu once. That's the half `sbctl status`
+can't tell you about.
+
+`-s` adds a file to sbctl's database, and the `zz-sbctl.hook` pacman hook re-signs
+everything in there after any transaction touching `/boot` — so kernel upgrades
+take care of themselves.
+
+**Watch out:** `sbctl verify` lists every `EFI/Microsoft/` and `EFI/Boot/` file
+as *not signed*. That's correct and expected — they're Microsoft-signed, not
+yours, and `-m` in §2 is what makes the firmware trust them. Never try to sign
+them. Only `grubx64.efi` and `vmlinuz-linux` are yours.
+
+**Watch out:** every later `grub-install` wipes the signature — firmware update,
+prefix fix, kernel parameters, anything. Re-run the `sbctl sign -s` on
+`grubx64.efi` straight after, or the next boot lands in rescue. The pacman hook
+does **not** cover this; a hand-run `grub-install` isn't a pacman transaction.
+
+**Watch out:** BitLocker treats a Secure Boot state change as tampering and asks
+for the recovery key on the first Windows boot after. Have it ready —
+`account.microsoft.com/devices/recoverykey`.
+
+**Watch out:** `strings grubx64.efi | grep shim_lock` still matches after §3.
+The symbol names stay in the binary; `--disable-shim-lock` stops the verifier
+being *registered*. Booting is the only real test.
 
 ## If it goes wrong
 
@@ -208,6 +287,12 @@ Secure Boot off again and retry.
   re-run §5.
 - **The firmware boots an old distro instead** — its NVRAM entry is winning.
   `efibootmgr -B -b <n>` to delete it, `-o` to put GRUB first (§5).
+- **GRUB drops to a rescue prompt saying something wasn't verified** — Secure Boot
+  is on and `grubx64.efi` still has shim_lock. Turn Secure Boot off in firmware to
+  get booting again, then rebuild and re-sign (§Secure Boot 3–4). Signing more
+  files is the wrong move; the initramfs can't be signed.
+- **It booted fine, then stopped after you touched GRUB** — `grub-install` wiped
+  the signature. Turn Secure Boot off, `sbctl sign -s` the binary, turn it back on.
 - **Arch won't boot** — Windows still does. Re-flash the USB, start from §1.
 - **greetd comes up black** — at the GRUB menu press `e`, append
   `systemd.unit=multi-user.target`, and boot to a TTY with greetd never started.
