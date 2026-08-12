@@ -43,7 +43,7 @@ vt = 1
 # The greeter compositor config is deliberately NOT ~/.config/hypr/hyprland.conf:
 # this runs as `greeter`, which cannot read /home/baas (mode 750). See
 # /etc/nwg-hello/hyprland.conf.
-command = "/usr/bin/start-hyprland -- -c /etc/nwg-hello/hyprland.conf"
+command = "/usr/bin/start-hyprland -- -c /etc/nwg-hello/hyprland.lua"
 
 # greetd creates this account from /usr/lib/sysusers.d/greetd.conf when the
 # package installs. nwg-hello's own source assumes this exact name -- main.py
