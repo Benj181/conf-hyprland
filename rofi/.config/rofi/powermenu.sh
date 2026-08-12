@@ -70,7 +70,7 @@ confirm() {
 case "$chosen" in
     *Lock)     loginctl lock-session ;;
     *Suspend)  systemctl suspend ;;
-    *Logout)   confirm "Log out of Hyprland?" && hyprctl dispatch exit ;;
+    *Logout)   confirm "Log out of Hyprland?" && hyprctl dispatch 'hl.dsp.exit()' ;;
     *Reboot)   confirm "Reboot now?"          && systemctl reboot ;;
     *Shutdown) confirm "Shut down now?"       && systemctl poweroff ;;
 esac
