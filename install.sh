@@ -16,7 +16,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 DOTFILES_DIR="$(pwd)"
 
-PACKAGES=(hypr waybar rofi mako kitty btop nvim hyprlock hypridle theme)
+PACKAGES=(hypr waybar rofi mako kitty btop nvim hyprlock hypridle theme zsh)
 
 SKIP_PACKAGES=0
 SKIP_GREETER=0
@@ -81,6 +81,7 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
     # the two steps most likely to surprise you -- not just a stow rehearsal.
     ./scripts/install-aur.sh 1
     ./scripts/install-keyring.sh 1
+    ./scripts/install-zsh.sh 1
     if [[ "$SKIP_GREETER" -eq 0 ]]; then
         ./scripts/install-greeter.sh "$DOTFILES_DIR" 1
     fi
@@ -101,6 +102,7 @@ if [[ "$SKIP_PACKAGES" -eq 0 ]]; then
         echo "==> Skipping greeter (--skip-greeter)"
     fi
     ./scripts/bootstrap-nvim.sh
+    ./scripts/install-zsh.sh 0
 fi
 
 echo

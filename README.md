@@ -54,6 +54,7 @@
 | **Launcher / power menu** | Rofi |
 | **Notifications** | mako |
 | **Terminal** | kitty |
+| **Shell** | zsh — autosuggestions + syntax highlighting |
 | **System monitor** | btop |
 | **Editor** | Neovim (AstroNvim) |
 | **Lock / idle** | hyprlock, hypridle |
@@ -134,6 +135,7 @@ the way is moved to `~/.dotfiles-backup-<timestamp>/`, never overwritten.
 | `scripts/install-greeter.sh` | greetd + nwg-hello, copied to `/etc` |
 | `scripts/greeter-template.py` | centres the greeter form, derived not vendored |
 | `scripts/bootstrap-nvim.sh` | headless Neovim plugin sync |
+| `scripts/install-zsh.sh` | sets zsh as the login shell (chsh) |
 
 Every top-level directory is a stow package mirroring `$HOME` —
 `hypr/.config/hypr/general.conf` → `~/.config/hypr/general.conf`. `greeter/` and
@@ -160,7 +162,7 @@ where it would go stale out of sight.
 
 ```bash
 cd ~/hyprland-dotfiles
-stow -D -t "$HOME" hypr waybar rofi mako kitty btop nvim hyprlock hypridle theme
+stow -D -t "$HOME" hypr waybar rofi mako kitty btop nvim hyprlock hypridle theme zsh
 ```
 
 The greeter isn't a stow package, so undo it separately — **before** you reboot,
@@ -170,6 +172,9 @@ or you'll log into a session whose config just vanished:
 sudo systemctl disable greetd
 sudo systemctl set-default multi-user.target
 ```
+
+Unstowing `zsh` removes `~/.zshrc` but not your login shell — switch back with
+`chsh -s /usr/bin/bash` if you want that too.
 
 <p align="center">
 	<img src="https://raw.githubusercontent.com/catppuccin/catppuccin/main/assets/footers/gray0_ctp_on_line.svg?sanitize=true"/>

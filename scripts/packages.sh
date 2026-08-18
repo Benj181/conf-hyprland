@@ -157,6 +157,14 @@ theming=(
     nwg-look
 )
 
+# Shell. zsh-autosuggestions and zsh-syntax-highlighting are official Arch
+# packages (extra), not AUR -- no separate install step needed.
+shell=(
+    zsh
+    zsh-autosuggestions
+    zsh-syntax-highlighting
+)
+
 # Neovim toolchain.
 #
 # neovim is just a package: extra has 0.12.4, which is exactly what this config
@@ -269,7 +277,7 @@ done
 echo "==> Full system upgrade and install (one pacman transaction)"
 sudo pacman -Syu --needed --noconfirm \
     "${core[@]}" "${apps[@]}" "${keyring[@]}" "${login[@]}" "${theming[@]}" \
-    "${nvim[@]}" "${rust[@]}" "${nvidia[@]}"
+    "${nvim[@]}" "${rust[@]}" "${nvidia[@]}" "${shell[@]}"
 
 # A minimal Arch install does not enable these. blueman and waybar's
 # network/bluetooth modules are frontends -- without the daemons they are dead
