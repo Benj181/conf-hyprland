@@ -195,6 +195,7 @@ MANIFEST=(
     "gtk4-colors.css|theme/.config/gtk-4.0/colors.css"
     "qt6ct-colors.conf|theme/.config/qt6ct/colors/generated.conf"
     "greeter.css|greeter/etc/nwg-hello/nwg-hello.css"
+    "greeter-hyprland.lua|greeter/etc/nwg-hello/hyprland.lua"
 )
 
 echo "==> Rendering palette: $PALETTE"

@@ -1,4 +1,4 @@
--- GENERATED from palettes/mono-warm.env by scripts/theme.sh -- do not edit.
+-- GENERATED from palettes/{{palette}}.env by scripts/theme.sh -- do not edit.
 -- Edit templates/greeter-hyprland.lua and re-run the script, then re-run
 -- scripts/install-greeter.sh to copy it into /etc.
 --
@@ -70,7 +70,7 @@ hl.config({
         -- @bg_alt rather than @bg: the wallpaper is a falloff from @bg out to
         -- @surface_hi, so its mean sits just above the base, and the overlay
         -- darkens it back down by roughly that much.
-        background_color = "rgb(191614)",
+        background_color = "rgb({{bg_alt_raw}})",
     },
 
     -- The greeter is on screen for a few seconds and is not a place to be cute.
