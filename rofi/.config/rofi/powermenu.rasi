@@ -1,13 +1,13 @@
 // ~/.config/rofi/powermenu.rasi
-// Theme for powermenu.sh. Shares the vendored Catppuccin palette with
-// config.rasi so the power menu and the launcher match.
+// Theme for powermenu.sh. Shares the generated palette with config.rasi so the
+// power menu and the launcher match.
 //
 // Note this file must style every element state explicitly, for the same
 // reason config.rasi does: rofi loads its built-in default theme first, and
 // that theme sets `background: rgba(253,246,227)` (Solarized light) on
 // element normal.normal. Anything left unstyled renders cream on a dark theme.
 
-@import "catppuccin-mocha"
+@import "colors"
 
 * {
     background-color: transparent;
@@ -18,43 +18,43 @@
 }
 
 window {
-    width:            340px;
+    width:            300px;
     location:         center;
     anchor:           center;
-    border-radius:    12px;
-    border:           2px;
-    border-color:     @mauve;
-    background-color: @base;
-    padding:          16px;
+    border-radius:    0;
+    border:           1px;
+    border-color:     @border-col;
+    background-color: @bg;
+    padding:          0;
 }
 
 mainbox {
     children: [ "inputbar", "message", "listview" ];
-    spacing:  12px;
+    spacing:  0;
 }
 
 // The prompt (user@host) acts as the title. The entry is hidden because this
 // is a pick-one menu, not a search: rofi still filters on keypress, and the
-// keybinds below make single letters select directly.
+// keybinds in powermenu.sh make single letters select directly.
 inputbar {
-    children:         [ "prompt" ];
-    background-color: @surface0;
-    border-radius:    8px;
-    padding:          8px 12px;
+    children:     [ "prompt" ];
+    padding:      10px 12px;
+    border:       0 0 1px 0;
+    border-color: @border-col;
 }
 
 prompt {
-    text-color: @mauve;
+    text-color: @dim;
 }
 
 message {
-    background-color: @surface0;
-    border-radius:    8px;
-    padding:          6px 12px;
+    padding:      6px 12px;
+    border:       0 0 1px 0;
+    border-color: @border-col;
 }
 
 textbox {
-    text-color: @subtext0;
+    text-color: @muted;
     font:       "FiraCode Nerd Font 10";
 }
 
@@ -63,46 +63,50 @@ listview {
     columns:      1;
     fixed-height: true;
     scrollbar:    false;
-    spacing:      4px;
+    padding:      6px;
+    spacing:      0;
 }
 
 element {
-    padding:       10px 12px;
-    border-radius: 8px;
+    padding:       9px 12px;
+    border-radius: 0;
     spacing:       10px;
 }
 
 element normal.normal,
 element alternate.normal {
     background-color: transparent;
-    text-color:       @text;
+    text-color:       @dim;
 }
 
 element normal.urgent,
 element alternate.urgent {
     background-color: transparent;
-    text-color:       @red;
+    text-color:       @urgent;
 }
 
 element normal.active,
 element alternate.active {
     background-color: transparent;
-    text-color:       @blue;
+    text-color:       @text;
 }
 
 element selected.normal {
-    background-color: @blue;
-    text-color:       @base;
+    background-color: @surface-hi;
+    text-color:       @accent;
 }
 
+// Shutdown and reboot are the urgent entries in powermenu.sh -- the one place
+// this menu is allowed colour, since "power off" and "lock" being visually
+// interchangeable is a real hazard at 2am.
 element selected.urgent {
-    background-color: @red;
-    text-color:       @base;
+    background-color: @urgent;
+    text-color:       @bg;
 }
 
 element selected.active {
-    background-color: @mauve;
-    text-color:       @base;
+    background-color: @surface-hi;
+    text-color:       @accent;
 }
 
 element-text {

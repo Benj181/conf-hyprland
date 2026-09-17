@@ -1,11 +1,14 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 44,
-    "margin-top": 6,
-    "margin-left": 10,
-    "margin-right": 10,
-    "spacing": 8,
+
+    // 30px, down from 44. The bar no longer floats, so it does not need to
+    // look like an object -- it needs to give the screen back. Margins and
+    // inter-section spacing are gone for the same reason; separation between
+    // modules is padding in style.css, which costs no vertical space.
+    "height": 30,
+    "spacing": 0,
+
     "modules-left": [
         "hyprland/workspaces"
     ],
@@ -23,22 +26,33 @@
         "custom/lock",
         "custom/power"
     ],
+
     "hyprland/workspaces": {
-        "format": "{icon}",
+        // "{name}", not "{icon}". With no format-icons table defined, {icon}
+        // has nothing to look up -- and plain numbers are the right call here
+        // anyway: a row of glyphs is exactly the decoration this retheme is
+        // removing.
+        "format": "{name}",
         "on-click": "activate"
     },
+
     "clock": {
         "format": "{:%a %d %b  %H:%M}",
         "tooltip-format": "<tt><small>{calendar}</small></tt>"
     },
+
+    // Single-space separators throughout, down from double. At 12px on a 30px
+    // bar the wider gap read as a gap between modules rather than between an
+    // icon and its value.
     "cpu": {
         "interval": 5,
-        "format": "\udb80\udf5b  {usage}%",
+        "format": "󰍛 {usage}%",
         "on-click": "kitty -e btop"
     },
+
     "memory": {
         "interval": 10,
-        "format": "\uf1c0  {used:0.1f}G",
+        "format": " {used:0.1f}G",
         "states": {
             "warning": 75,
             "critical": 90
@@ -46,55 +60,63 @@
         "tooltip-format": "{used:0.1f}G / {total:0.1f}G  ({percentage}%)",
         "on-click": "kitty -e btop"
     },
+
     "bluetooth": {
-        "format": "\uf293",
-        "format-off": "\udb80\udcb2",
-        "format-disabled": "\udb80\udcb2",
-        "format-connected": "\udb80\udcb1  {num_connections}",
+        "format": "",
+        "format-off": "󰂲",
+        "format-disabled": "󰂲",
+        "format-connected": "󰂱 {num_connections}",
         "format-no-controller": "",
         "tooltip-format": "{controller_alias}\t{controller_address}",
         "tooltip-format-connected": "{controller_alias}\n{device_enumerate}",
         "on-click": "blueman-manager"
     },
+
     "network": {
-        "format-wifi": "\uf1eb  {essid}",
-        "format-ethernet": "\uf0e8  connected",
-        "format-disconnected": "\uf127  offline",
+        "format-wifi": " {essid}",
+        "format-ethernet": " connected",
+        "format-disconnected": " offline",
         "on-click": "nm-connection-editor"
     },
+
     "pulseaudio": {
-        "format": "{icon}  {volume}%",
-        "format-muted": "\uf026  muted",
+        "format": "{icon} {volume}%",
+        "format-muted": " muted",
         "format-icons": {
             "default": [
-                "\uf026",
-                "\uf027",
-                "\uf028"
+                "",
+                "",
+                ""
             ]
         },
         "on-click": "pavucontrol",
         "on-scroll-up": "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+",
         "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
     },
+
     "pulseaudio#microphone": {
         "format": "{format_source}",
-        "format-source": "\uf130  {volume}%",
-        "format-source-muted": "\uf131  muted",
+        "format-source": " {volume}%",
+        "format-source-muted": " muted",
         "on-click": "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
         "on-scroll-up": "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SOURCE@ 5%+",
         "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SOURCE@ 5%-",
         "tooltip-format": "{source_desc}"
     },
+
     "tray": {
+        "icon-size": 16,
         "spacing": 8
     },
+
     "custom/lock": {
-        "format": "\uf023",
+        "format": "",
         "tooltip": false,
         "on-click": "loginctl lock-session"
     },
+
     "custom/power": {
-        "format": "\u23fb",
+        "format": "⏻",
         "tooltip": false,
         "on-click": "~/.config/rofi/powermenu.sh"
     }
