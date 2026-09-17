@@ -1,4 +1,4 @@
-/* GENERATED from palettes/mono-warm.env by scripts/theme.sh -- do not edit.
+/* GENERATED from palettes/{{palette}}.env by scripts/theme.sh -- do not edit.
  * Edit templates/greeter.css and re-run the script, then re-run
  * scripts/install-greeter.sh to copy it into /etc.
  *
@@ -30,11 +30,11 @@
  * (mode 750). install-greeter.sh copies the wallpaper there. */
 window {
     background-image:
-        linear-gradient(rgba(18, 17, 16, 0.3), rgba(18, 17, 16, 0.3)),
+        linear-gradient(rgba({{bg_rgb}}, 0.3), rgba({{bg_rgb}}, 0.3)),
         url("/usr/share/nwg-hello/wallpaper.png");
     background-size: cover, cover;
     background-position: center, center;
-    color: #ddd6ce;
+    color: {{text}};
     font-family: "FiraCode Nerd Font";
 }
 
@@ -50,7 +50,7 @@ window {
  * does, so this is kept but pushed into the background rather than deleted. */
 #welcome-label {
     font-size: 15px;
-    color: #5e574f;
+    color: {{muted}};
     margin-bottom: 4px;
 }
 
@@ -62,14 +62,14 @@ window {
     font-family: "FiraCode Nerd Font";
     font-size: 96px;
     font-weight: 300;
-    color: #ddd6ce;
+    color: {{text}};
     margin-bottom: 0;
 }
 
 /* hyprlock: font_size = 18, color = @dim. */
 #date-label {
     font-size: 18px;
-    color: #8c837a;
+    color: {{dim}};
     margin-bottom: 28px;
 }
 
@@ -77,7 +77,7 @@ window {
  * quiet and let the input field carry the eye. */
 #form-label {
     font-size: 13px;
-    color: #8c837a;
+    color: {{dim}};
     margin-top: 6px;
 }
 
@@ -88,22 +88,22 @@ window {
     min-height: 44px;
     padding: 0 14px;
     border-radius: 0;
-    border: 1px solid #322f2c;
-    background-color: rgba(29, 27, 25, 0.93);
+    border: 1px solid {{border}};
+    background-color: rgba({{surface_rgb}}, 0.93);
     background-image: none;
-    color: #ddd6ce;
-    caret-color: #f2ece4;
+    color: {{text}};
+    caret-color: {{accent}};
     font-family: "FiraCode Nerd Font";
     font-size: 15px;
 }
 
 #password-entry:focus {
-    border-color: #f2ece4;
+    border-color: {{accent}};
 }
 
 #password-entry selection {
-    background-color: #ddd6ce;
-    color: #121110;
+    background-color: {{text}};
+    color: {{bg}};
 }
 
 /* Session and user pickers. Same shape as the password field but recessed,
@@ -114,23 +114,23 @@ window {
 
 #form-combo button {
     border-radius: 0;
-    border: 1px solid #1d1b19;
-    background-color: rgba(18, 17, 16, 0.75);
+    border: 1px solid {{surface}};
+    background-color: rgba({{bg_rgb}}, 0.75);
     background-image: none;
-    color: #8c837a;
+    color: {{dim}};
     padding: 4px 10px;
 }
 
 #form-combo button:hover {
-    border-color: #322f2c;
-    background-color: rgba(29, 27, 25, 0.85);
-    color: #ddd6ce;
+    border-color: {{border}};
+    background-color: rgba({{surface_rgb}}, 0.85);
+    color: {{text}};
 }
 
 #form-combo window,
 #form-combo menu {
-    background-color: #121110;
-    color: #ddd6ce;
+    background-color: {{bg}};
+    color: {{text}};
 }
 
 /* hyprlock has no login button -- Enter submits. This exists, so give it the
@@ -141,19 +141,19 @@ window {
     margin-top: 18px;
     border-radius: 0;
     border: none;
-    background-color: #ddd6ce;
+    background-color: {{text}};
     background-image: none;
-    color: #121110;
+    color: {{bg}};
     font-weight: bold;
     padding: 0 24px;
 }
 
 #login-button:hover {
-    background-color: #f2ece4;
+    background-color: {{accent}};
 }
 
 #login-button:active {
-    background-color: #8c837a;
+    background-color: {{dim}};
 }
 
 /* The button's own `color` does not reach its text. GtkButton wraps its label
@@ -162,7 +162,7 @@ window {
  * Without this the Login text renders @text on @text: invisible. Style the
  * label node directly. */
 #login-button label {
-    color: #121110;
+    color: {{bg}};
 }
 
 /* Sleep, reboot and power-off all share the name "power-button" -- ui.py sets
@@ -177,27 +177,27 @@ window {
 }
 
 #power-button:hover {
-    background-color: rgba(42, 39, 36, 0.6);
+    background-color: rgba({{surface_hi_rgb}}, 0.6);
 }
 
 #power-button:active {
-    background-color: rgba(50, 47, 44, 0.8);
+    background-color: rgba({{border_rgb}}, 0.8);
 }
 
 /* "Show password" checkbox. */
 checkbutton {
-    color: #8c837a;
+    color: {{dim}};
     font-size: 13px;
 }
 
 checkbutton check {
     border-radius: 0;
-    border: 1px solid #322f2c;
-    background-color: rgba(29, 27, 25, 0.75);
+    border: 1px solid {{border}};
+    background-color: rgba({{surface_rgb}}, 0.75);
 }
 
 checkbutton check:checked {
-    background-color: #ddd6ce;
-    border-color: #ddd6ce;
-    color: #121110;
+    background-color: {{text}};
+    border-color: {{text}};
+    color: {{bg}};
 }

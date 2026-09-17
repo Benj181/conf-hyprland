@@ -1,0 +1,16 @@
+/* GENERATED from palettes/{{palette}}.env by scripts/theme.sh -- do not edit.
+ * Edit the palette and re-run the script. */
+
+@define-color bg         {{bg}};
+@define-color bg_alt     {{bg_alt}};
+@define-color surface    {{surface}};
+@define-color surface_hi {{surface_hi}};
+@define-color border     {{border}};
+@define-color muted      {{muted}};
+@define-color dim        {{dim}};
+@define-color text       {{text}};
+@define-color accent     {{accent}};
+
+@define-color urgent {{urgent}};
+@define-color warn   {{warn}};
+@define-color good   {{good}};

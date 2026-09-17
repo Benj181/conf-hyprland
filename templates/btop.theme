@@ -1,0 +1,98 @@
+# GENERATED from palettes/{{palette}}.env by scripts/theme.sh -- do not edit.
+# Edit templates/btop.theme and re-run the script.
+#
+# btop is almost entirely gradients: every meter, graph and process row is a
+# three-stop ramp. A monochrome btop therefore cannot work the way the rest of
+# the rice does, where colour is dropped and brightness carries the meaning --
+# here brightness *is* the value being displayed, so the ramps have to stay
+# ramps. They run @muted -> @dim -> @text instead of hue-to-hue, which keeps
+# "more of the bar filled" readable while spending no colour on it.
+#
+# The exception is temperature, which is the one reading where the number
+# mattering is the whole point of looking: it keeps a grey -> warn -> urgent
+# ramp, on the same rule as the bar's memory states.
+
+# Main background, empty for terminal default, need to be empty if you want transparent background
+theme[main_bg]="{{bg}}"
+
+# Main text color
+theme[main_fg]="{{text}}"
+
+# Title color for boxes
+theme[title]="{{text}}"
+
+# Highlight color for keyboard shortcuts
+theme[hi_fg]="{{accent}}"
+
+# Background color of selected item in processes box
+theme[selected_bg]="{{surface_hi}}"
+
+# Foreground color of selected item in processes box
+theme[selected_fg]="{{accent}}"
+
+# Color of inactive/disabled text
+theme[inactive_fg]="{{muted}}"
+
+# Color of text appearing on top of graphs, i.e uptime and current network graph scaling
+theme[graph_text]="{{dim}}"
+
+# Background color of the percentage meters
+theme[meter_bg]="{{surface}}"
+
+# Misc colors for processes box including mini cpu graphs, details memory graph and details status text
+theme[proc_misc]="{{dim}}"
+
+# CPU, Memory, Network, Proc box outline colors
+# One grey, not four hues -- the labels already say which box is which.
+theme[cpu_box]="{{border}}"
+theme[mem_box]="{{border}}"
+theme[net_box]="{{border}}"
+theme[proc_box]="{{border}}"
+
+# Box divider line and small boxes line color
+theme[div_line]="{{surface_hi}}"
+
+# Temperature graph color (cool -> warn -> critical)
+theme[temp_start]="{{dim}}"
+theme[temp_mid]="{{warn}}"
+theme[temp_end]="{{urgent}}"
+
+# CPU graph colors
+theme[cpu_start]="{{muted}}"
+theme[cpu_mid]="{{dim}}"
+theme[cpu_end]="{{text}}"
+
+# Mem/Disk free meter
+theme[free_start]="{{surface_hi}}"
+theme[free_mid]="{{border}}"
+theme[free_end]="{{muted}}"
+
+# Mem/Disk cached meter
+theme[cached_start]="{{border}}"
+theme[cached_mid]="{{muted}}"
+theme[cached_end]="{{dim}}"
+
+# Mem/Disk available meter
+theme[available_start]="{{muted}}"
+theme[available_mid]="{{dim}}"
+theme[available_end]="{{text}}"
+
+# Mem/Disk used meter
+theme[used_start]="{{muted}}"
+theme[used_mid]="{{dim}}"
+theme[used_end]="{{text}}"
+
+# Download graph colors
+theme[download_start]="{{muted}}"
+theme[download_mid]="{{dim}}"
+theme[download_end]="{{text}}"
+
+# Upload graph colors
+theme[upload_start]="{{muted}}"
+theme[upload_mid]="{{dim}}"
+theme[upload_end]="{{text}}"
+
+# Process box color gradient for threads, mem and cpu usage
+theme[process_start]="{{muted}}"
+theme[process_mid]="{{dim}}"
+theme[process_end]="{{text}}"

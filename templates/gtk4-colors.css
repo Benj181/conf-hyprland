@@ -1,0 +1,73 @@
+/* GENERATED from palettes/{{palette}}.env by scripts/theme.sh -- do not edit.
+ * Edit templates/gtk4-colors.css and re-run the script.
+ *
+ * libadwaita deliberately ignores gtk-theme-name -- apps like Nautilus cannot
+ * be themed by dropping in a GTK theme. The supported route is overriding its
+ * named colours, which is what this does. Nothing is downloaded: recolouring
+ * libadwaita directly needs no external theme, so there is nothing to go
+ * stale (catppuccin/gtk, the obvious alternative, was archived in June 2024).
+ *
+ * accent_bg_color is @surface_hi rather than a hue. libadwaita paints it on
+ * toggles, checked switches and selected rows, and it is the single largest
+ * source of colour left in a GTK app once the window chrome is grey. */
+
+@define-color window_bg_color {{bg}};
+@define-color window_fg_color {{text}};
+
+@define-color view_bg_color {{bg}};
+@define-color view_fg_color {{text}};
+
+@define-color headerbar_bg_color {{bg_alt}};
+@define-color headerbar_fg_color {{text}};
+@define-color headerbar_border_color {{border}};
+@define-color headerbar_backdrop_color @window_bg_color;
+@define-color headerbar_shade_color rgba(0, 0, 0, 0.36);
+
+@define-color sidebar_bg_color {{bg_alt}};
+@define-color sidebar_fg_color {{text}};
+@define-color sidebar_backdrop_color {{bg}};
+@define-color sidebar_shade_color rgba(0, 0, 0, 0.36);
+
+@define-color secondary_sidebar_bg_color {{bg_alt}};
+@define-color secondary_sidebar_fg_color {{text}};
+@define-color secondary_sidebar_backdrop_color {{bg}};
+@define-color secondary_sidebar_shade_color rgba(0, 0, 0, 0.36);
+
+@define-color card_bg_color {{surface}};
+@define-color card_fg_color {{text}};
+@define-color card_shade_color rgba(0, 0, 0, 0.36);
+
+@define-color dialog_bg_color {{surface}};
+@define-color dialog_fg_color {{text}};
+
+@define-color popover_bg_color {{surface}};
+@define-color popover_fg_color {{text}};
+@define-color popover_shade_color rgba(0, 0, 0, 0.36);
+
+@define-color accent_color {{text}};
+@define-color accent_bg_color {{surface_hi}};
+@define-color accent_fg_color {{accent}};
+
+@define-color destructive_color {{urgent}};
+@define-color destructive_bg_color {{urgent}};
+@define-color destructive_fg_color {{bg}};
+
+@define-color success_color {{good}};
+@define-color success_bg_color {{good}};
+@define-color success_fg_color {{bg}};
+
+@define-color warning_color {{warn}};
+@define-color warning_bg_color {{warn}};
+@define-color warning_fg_color {{bg}};
+
+@define-color error_color {{urgent}};
+@define-color error_bg_color {{urgent}};
+@define-color error_fg_color {{bg}};
+
+@define-color borders {{border}};
+
+@define-color thumbnail_bg_color {{surface}};
+@define-color thumbnail_fg_color {{text}};
+
+@define-color shade_color rgba(0, 0, 0, 0.36);
+@define-color scrollbar_outline_color {{bg}};

@@ -81,7 +81,22 @@ DOTFILES_DIR="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
 DRY_RUN="${2:-0}"
 
 SRC="$DOTFILES_DIR/greeter"
-WALLPAPER="$DOTFILES_DIR/wallpapers/mocha-landscape.jpg"
+
+# The wallpaper follows the active palette, same as everything else -- both it
+# and greeter/nwg-hello.css are written by scripts/theme.sh, so this script has
+# to ask which palette is active rather than naming a file. If theme.sh has
+# never run, fall back to the palette that ships with the repo.
+ACTIVE_PALETTE="mono-neutral"
+if [ -f "$DOTFILES_DIR/palettes/.active" ]; then
+    ACTIVE_PALETTE="$(cat "$DOTFILES_DIR/palettes/.active")"
+fi
+WALLPAPER="$DOTFILES_DIR/wallpapers/${ACTIVE_PALETTE}-landscape.png"
+
+if [ ! -f "$WALLPAPER" ]; then
+    echo "Missing $WALLPAPER" >&2
+    echo "Run ./scripts/theme.sh first -- it generates the wallpaper." >&2
+    exit 1
+fi
 
 # Set when the template derivation falls back, so the summary can say so. A
 # warning that scrolls past mid-install is a warning nobody reads.
@@ -198,9 +213,9 @@ fi
 # Wallpaper. `greeter` cannot read the repo under /home/baas (mode 750), so the
 # image is copied somewhere world-readable. nwg-hello.css references this path.
 # ---------------------------------------------------------------------------
-echo "    wallpaper -> /usr/share/nwg-hello/wallpaper.jpg"
+echo "    wallpaper -> /usr/share/nwg-hello/wallpaper.png"
 run sudo mkdir -p /usr/share/nwg-hello
-run sudo install -m 644 "$WALLPAPER" /usr/share/nwg-hello/wallpaper.jpg
+run sudo install -m 644 "$WALLPAPER" /usr/share/nwg-hello/wallpaper.png
 
 # ---------------------------------------------------------------------------
 # Config. Back up whatever is already there before replacing it.
@@ -315,8 +330,8 @@ if [ "$DRY_RUN" -eq 0 ] && getent passwd greeter >/dev/null; then
         fi
     done
     echo "        fonts OK"
-    if ! sudo -u greeter test -r /usr/share/nwg-hello/wallpaper.jpg; then
-        echo "    greeter cannot read /usr/share/nwg-hello/wallpaper.jpg" >&2
+    if ! sudo -u greeter test -r /usr/share/nwg-hello/wallpaper.png; then
+        echo "    greeter cannot read /usr/share/nwg-hello/wallpaper.png" >&2
         exit 1
     fi
     echo "        wallpaper OK"

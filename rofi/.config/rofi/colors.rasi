@@ -1,0 +1,20 @@
+/* GENERATED from palettes/mono-warm.env by scripts/theme.sh -- do not edit.
+ * Edit the palette and re-run the script.
+ *
+ * Colour definitions only; the layout lives in config.rasi. */
+
+* {
+    bg:         #121110;
+    bg-alt:     #191614;
+    surface:    #1d1b19;
+    surface-hi: #2a2724;
+    border-col: #322f2c;
+    muted:      #5e574f;
+    dim:        #8c837a;
+    text:       #ddd6ce;
+    accent:     #f2ece4;
+
+    urgent: #c05a50;
+    warn:   #b08a4a;
+    good:   #7d8f6a;
+}

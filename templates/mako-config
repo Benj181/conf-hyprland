@@ -1,4 +1,4 @@
-# GENERATED from palettes/mono-warm.env by scripts/theme.sh -- do not edit.
+# GENERATED from palettes/{{palette}}.env by scripts/theme.sh -- do not edit.
 # Edit templates/mako-config and re-run the script.
 #
 # The whole file is generated, not just the colours: mako's config format has
@@ -6,10 +6,10 @@
 # palette file. Anything you want to change about notifications belongs in the
 # template.
 
-background-color=#121110ee
-text-color=#ddd6ce
-border-color=#322f2c
-progress-color=over #2a2724
+background-color={{bg}}ee
+text-color={{text}}
+border-color={{border}}
+progress-color=over {{surface_hi}}
 border-size=1
 border-radius=0
 padding=10
@@ -24,16 +24,16 @@ font=FiraCode Nerd Font 11
 # radius is the same floating-pill language the rest of this retheme drops.
 
 [urgency=low]
-text-color=#8c837a
-border-color=#322f2c
+text-color={{dim}}
+border-color={{border}}
 
 [urgency=normal]
-border-color=#322f2c
+border-color={{border}}
 
 # The one place a notification is allowed colour, on the same rule as the bar:
 # a critical notification that looks like every other notification is not
 # doing its job.
 [urgency=high]
-border-color=#c05a50
-text-color=#ddd6ce
+border-color={{urgent}}
+text-color={{text}}
 default-timeout=0

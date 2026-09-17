@@ -68,6 +68,16 @@ else
     echo "==> Skipping packages"
 fi
 
+# Colours, before stow. The generated files are committed, so this is normally
+# a no-op -- but it is what catches a palette edited without re-running
+# theme.sh, which would otherwise install a repo whose configs disagree with
+# palettes/.active. --no-reload because nothing is running yet on a fresh box.
+if [[ "$DRY_RUN" -eq 1 ]]; then
+    ./scripts/theme.sh --check
+else
+    ./scripts/theme.sh --no-reload
+fi
+
 ./scripts/preflight.sh "$DOTFILES_DIR" "$DRY_RUN" "${PACKAGES[@]}"
 
 echo "==> Stowing: ${PACKAGES[*]}"

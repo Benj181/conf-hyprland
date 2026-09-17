@@ -1,0 +1,98 @@
+# GENERATED from palettes/mono-warm.env by scripts/theme.sh -- do not edit.
+# Edit templates/btop.theme and re-run the script.
+#
+# btop is almost entirely gradients: every meter, graph and process row is a
+# three-stop ramp. A monochrome btop therefore cannot work the way the rest of
+# the rice does, where colour is dropped and brightness carries the meaning --
+# here brightness *is* the value being displayed, so the ramps have to stay
+# ramps. They run @muted -> @dim -> @text instead of hue-to-hue, which keeps
+# "more of the bar filled" readable while spending no colour on it.
+#
+# The exception is temperature, which is the one reading where the number
+# mattering is the whole point of looking: it keeps a grey -> warn -> urgent
+# ramp, on the same rule as the bar's memory states.
+
+# Main background, empty for terminal default, need to be empty if you want transparent background
+theme[main_bg]="#121110"
+
+# Main text color
+theme[main_fg]="#ddd6ce"
+
+# Title color for boxes
+theme[title]="#ddd6ce"
+
+# Highlight color for keyboard shortcuts
+theme[hi_fg]="#f2ece4"
+
+# Background color of selected item in processes box
+theme[selected_bg]="#2a2724"
+
+# Foreground color of selected item in processes box
+theme[selected_fg]="#f2ece4"
+
+# Color of inactive/disabled text
+theme[inactive_fg]="#5e574f"
+
+# Color of text appearing on top of graphs, i.e uptime and current network graph scaling
+theme[graph_text]="#8c837a"
+
+# Background color of the percentage meters
+theme[meter_bg]="#1d1b19"
+
+# Misc colors for processes box including mini cpu graphs, details memory graph and details status text
+theme[proc_misc]="#8c837a"
+
+# CPU, Memory, Network, Proc box outline colors
+# One grey, not four hues -- the labels already say which box is which.
+theme[cpu_box]="#322f2c"
+theme[mem_box]="#322f2c"
+theme[net_box]="#322f2c"
+theme[proc_box]="#322f2c"
+
+# Box divider line and small boxes line color
+theme[div_line]="#2a2724"
+
+# Temperature graph color (cool -> warn -> critical)
+theme[temp_start]="#8c837a"
+theme[temp_mid]="#b08a4a"
+theme[temp_end]="#c05a50"
+
+# CPU graph colors
+theme[cpu_start]="#5e574f"
+theme[cpu_mid]="#8c837a"
+theme[cpu_end]="#ddd6ce"
+
+# Mem/Disk free meter
+theme[free_start]="#2a2724"
+theme[free_mid]="#322f2c"
+theme[free_end]="#5e574f"
+
+# Mem/Disk cached meter
+theme[cached_start]="#322f2c"
+theme[cached_mid]="#5e574f"
+theme[cached_end]="#8c837a"
+
+# Mem/Disk available meter
+theme[available_start]="#5e574f"
+theme[available_mid]="#8c837a"
+theme[available_end]="#ddd6ce"
+
+# Mem/Disk used meter
+theme[used_start]="#5e574f"
+theme[used_mid]="#8c837a"
+theme[used_end]="#ddd6ce"
+
+# Download graph colors
+theme[download_start]="#5e574f"
+theme[download_mid]="#8c837a"
+theme[download_end]="#ddd6ce"
+
+# Upload graph colors
+theme[upload_start]="#5e574f"
+theme[upload_mid]="#8c837a"
+theme[upload_end]="#ddd6ce"
+
+# Process box color gradient for threads, mem and cpu usage
+theme[process_start]="#5e574f"
+theme[process_mid]="#8c837a"
+theme[process_end]="#ddd6ce"

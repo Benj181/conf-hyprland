@@ -1,0 +1,16 @@
+/* GENERATED from palettes/mono-warm.env by scripts/theme.sh -- do not edit.
+ * Edit the palette and re-run the script. */
+
+@define-color bg         #121110;
+@define-color bg_alt     #191614;
+@define-color surface    #1d1b19;
+@define-color surface_hi #2a2724;
+@define-color border     #322f2c;
+@define-color muted      #5e574f;
+@define-color dim        #8c837a;
+@define-color text       #ddd6ce;
+@define-color accent     #f2ece4;
+
+@define-color urgent #c05a50;
+@define-color warn   #b08a4a;
+@define-color good   #7d8f6a;

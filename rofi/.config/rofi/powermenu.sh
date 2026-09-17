@@ -5,7 +5,7 @@
 # This replaces wlogout. hyprsimple -- the look this setup is modelled on --
 # uses a rofi menu for this too; the wlogout config in its repo is vestigial
 # and unused. Rofi is what gives the small centred menu instead of a
-# fullscreen overlay, and it reuses the Catppuccin theme the launcher already
+# fullscreen overlay, and it reuses the generated palette the launcher already
 # uses, so the two match by construction.
 
 set -euo pipefail

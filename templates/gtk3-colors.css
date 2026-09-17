@@ -1,0 +1,26 @@
+/* GENERATED from palettes/{{palette}}.env by scripts/theme.sh -- do not edit.
+ * Edit templates/gtk3-colors.css and re-run the script.
+ *
+ * GTK3 apps do honour gtk-theme-name (settings.ini sets Adwaita-dark as the
+ * base), so this only needs to recolour on top rather than replace the theme.
+ * The names here are GTK3's; libadwaita uses an entirely different set, which
+ * is why gtk-4.0 gets its own file rather than sharing this one. */
+
+@define-color theme_bg_color {{bg}};
+@define-color theme_fg_color {{text}};
+@define-color theme_base_color {{bg}};
+@define-color theme_text_color {{text}};
+
+@define-color theme_selected_bg_color {{surface_hi}};
+@define-color theme_selected_fg_color {{accent}};
+
+@define-color insensitive_bg_color {{bg_alt}};
+@define-color insensitive_fg_color {{muted}};
+@define-color insensitive_base_color {{bg}};
+
+@define-color borders {{border}};
+@define-color unfocused_borders {{surface}};
+
+@define-color warning_color {{warn}};
+@define-color error_color {{urgent}};
+@define-color success_color {{good}};

@@ -1,0 +1,73 @@
+/* GENERATED from palettes/mono-warm.env by scripts/theme.sh -- do not edit.
+ * Edit templates/gtk4-colors.css and re-run the script.
+ *
+ * libadwaita deliberately ignores gtk-theme-name -- apps like Nautilus cannot
+ * be themed by dropping in a GTK theme. The supported route is overriding its
+ * named colours, which is what this does. Nothing is downloaded: recolouring
+ * libadwaita directly needs no external theme, so there is nothing to go
+ * stale (catppuccin/gtk, the obvious alternative, was archived in June 2024).
+ *
+ * accent_bg_color is @surface_hi rather than a hue. libadwaita paints it on
+ * toggles, checked switches and selected rows, and it is the single largest
+ * source of colour left in a GTK app once the window chrome is grey. */
+
+@define-color window_bg_color #121110;
+@define-color window_fg_color #ddd6ce;
+
+@define-color view_bg_color #121110;
+@define-color view_fg_color #ddd6ce;
+
+@define-color headerbar_bg_color #191614;
+@define-color headerbar_fg_color #ddd6ce;
+@define-color headerbar_border_color #322f2c;
+@define-color headerbar_backdrop_color @window_bg_color;
+@define-color headerbar_shade_color rgba(0, 0, 0, 0.36);
+
+@define-color sidebar_bg_color #191614;
+@define-color sidebar_fg_color #ddd6ce;
+@define-color sidebar_backdrop_color #121110;
+@define-color sidebar_shade_color rgba(0, 0, 0, 0.36);
+
+@define-color secondary_sidebar_bg_color #191614;
+@define-color secondary_sidebar_fg_color #ddd6ce;
+@define-color secondary_sidebar_backdrop_color #121110;
+@define-color secondary_sidebar_shade_color rgba(0, 0, 0, 0.36);
+
+@define-color card_bg_color #1d1b19;
+@define-color card_fg_color #ddd6ce;
+@define-color card_shade_color rgba(0, 0, 0, 0.36);
+
+@define-color dialog_bg_color #1d1b19;
+@define-color dialog_fg_color #ddd6ce;
+
+@define-color popover_bg_color #1d1b19;
+@define-color popover_fg_color #ddd6ce;
+@define-color popover_shade_color rgba(0, 0, 0, 0.36);
+
+@define-color accent_color #ddd6ce;
+@define-color accent_bg_color #2a2724;
+@define-color accent_fg_color #f2ece4;
+
+@define-color destructive_color #c05a50;
+@define-color destructive_bg_color #c05a50;
+@define-color destructive_fg_color #121110;
+
+@define-color success_color #7d8f6a;
+@define-color success_bg_color #7d8f6a;
+@define-color success_fg_color #121110;
+
+@define-color warning_color #b08a4a;
+@define-color warning_bg_color #b08a4a;
+@define-color warning_fg_color #121110;
+
+@define-color error_color #c05a50;
+@define-color error_bg_color #c05a50;
+@define-color error_fg_color #121110;
+
+@define-color borders #322f2c;
+
+@define-color thumbnail_bg_color #1d1b19;
+@define-color thumbnail_fg_color #ddd6ce;
+
+@define-color shade_color rgba(0, 0, 0, 0.36);
+@define-color scrollbar_outline_color #121110;

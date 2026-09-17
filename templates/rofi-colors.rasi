@@ -1,0 +1,20 @@
+/* GENERATED from palettes/{{palette}}.env by scripts/theme.sh -- do not edit.
+ * Edit the palette and re-run the script.
+ *
+ * Colour definitions only; the layout lives in config.rasi. */
+
+* {
+    bg:         {{bg}};
+    bg-alt:     {{bg_alt}};
+    surface:    {{surface}};
+    surface-hi: {{surface_hi}};
+    border-col: {{border}};
+    muted:      {{muted}};
+    dim:        {{dim}};
+    text:       {{text}};
+    accent:     {{accent}};
+
+    urgent: {{urgent}};
+    warn:   {{warn}};
+    good:   {{good}};
+}
