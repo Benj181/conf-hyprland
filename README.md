@@ -1,5 +1,5 @@
 <h3 align="center">
-	Hyprland — Catppuccin Mocha
+	Hyprland — Monochrome
 </h3>
 
 <p align="center">
@@ -8,10 +8,10 @@
 </p>
 
 <p align="center">
-	<img src="https://img.shields.io/badge/Hyprland-0.53-cba6f7?style=for-the-badge&labelColor=1e1e2e&logo=hyprland&logoColor=cba6f7"/>
-	<img src="https://img.shields.io/badge/Arch-Linux-89b4fa?style=for-the-badge&labelColor=1e1e2e&logo=archlinux&logoColor=89b4fa"/>
-	<img src="https://img.shields.io/badge/Catppuccin-Mocha-f5c2e7?style=for-the-badge&labelColor=1e1e2e"/>
-	<img src="https://img.shields.io/badge/GNU-Stow-a6e3a1?style=for-the-badge&labelColor=1e1e2e&logo=gnu&logoColor=a6e3a1"/>
+	<img src="https://img.shields.io/badge/Hyprland-0.56-e6e6e6?style=for-the-badge&labelColor=0e0e0e&logo=hyprland&logoColor=e6e6e6"/>
+	<img src="https://img.shields.io/badge/Arch-Linux-e6e6e6?style=for-the-badge&labelColor=0e0e0e&logo=archlinux&logoColor=e6e6e6"/>
+	<img src="https://img.shields.io/badge/Palette-swappable-8a8a8a?style=for-the-badge&labelColor=0e0e0e"/>
+	<img src="https://img.shields.io/badge/GNU-Stow-8a8a8a?style=for-the-badge&labelColor=0e0e0e&logo=gnu&logoColor=8a8a8a"/>
 </p>
 
 <p align="center">
@@ -67,7 +67,7 @@
 | **Rust** | rustup — stable, `complete` profile |
 | **Login** | greetd + nwg-hello |
 | **Secrets** | gnome-keyring, unlocked by PAM at login |
-| **Theme** | Catppuccin Mocha, everywhere |
+| **Theme** | Generated from one palette file — see [Theming](#theming) |
 
 ## Install
 
@@ -96,6 +96,57 @@ the way is moved to `~/.dotfiles-backup-<timestamp>/`, never overwritten.
 > First time on real hardware, stage it: `./install.sh --skip-greeter`, reboot,
 > confirm the desktop comes up, then `./scripts/install-greeter.sh`. It prints a
 > live check (`systemctl start greetd`) and a rollback before you commit.
+
+## Theming
+
+Every colour in the rice comes from one file. `palettes/<name>.env` is the
+source; `scripts/theme.sh` renders it through `templates/` into the per-app
+colour files each stow package ships, then reloads whatever is running.
+
+```bash
+./scripts/theme.sh --list          # what's available
+./scripts/theme.sh mono-warm       # switch and apply, live
+./scripts/theme.sh                 # re-render after editing a palette
+```
+
+| Palette | |
+|---|---|
+| `mono-neutral` | true neutral grey — no hue anywhere in the desktop chrome |
+| `mono-warm` | slight brown cast, Gruvbox-material register |
+| `mono-cool` | slight blue cast, closest to the old Catppuccin base |
+
+Switching updates waybar, rofi, kitty, btop, mako, hyprlock, the wallpaper,
+GTK3, GTK4/libadwaita, Qt (qt6ct), the Hyprland window borders and the greeter.
+Hyprland, waybar, mako, kitty and hyprpaper reload in place; nvim, btop and
+GTK/Qt apps pick it up on next launch. The greeter needs
+`./scripts/install-greeter.sh` to copy the new stylesheet into `/etc`.
+
+To try a scheme of your own, copy `palettes/mono-neutral.env` — it documents
+what each key is used for, and `theme.sh` refuses to render a palette that is
+missing one rather than shipping a config with a hole in it.
+
+Two rules make this work, and breaking either produces a rice that drifts out
+of sync one app at a time:
+
+- **No hex values outside `palettes/` and `templates/`.** Anything hardcoded
+  elsewhere will not follow a switch.
+- **Generated files are build output.** They carry a `GENERATED` header and are
+  committed so a fresh clone installs without running anything first. Edit the
+  template, not the output. `./scripts/theme.sh --check` fails if the two have
+  drifted apart, and `install.sh --dry-run` runs it.
+
+### Design
+
+Monochrome removes the obvious way to tell things apart, so the scheme leans on
+brightness instead: `@dim` for ambient readouts, `@text` for what you look at
+deliberately, `@accent` (white) for the one thing that is focused. Colour is
+kept for the three cases where losing the signal costs something — critical
+memory, a failed unlock, an urgent notification — plus the terminal and editor,
+where achromatic ANSI would break `git diff` and every compiler's error output.
+
+Geometry follows the same idea: `rounding = 2`, 1px borders, 2/4 gaps, and a
+flat 30px bar with no per-section boxes, so the brightest and sharpest thing on
+screen is always the window you are working in.
 
 ## Keybinds
 
@@ -128,6 +179,8 @@ the way is moved to `~/.dotfiles-backup-<timestamp>/`, never overwritten.
 
 | Script | |
 |---|---|
+| `scripts/theme.sh` | renders the active palette into every app's colour file |
+| `scripts/make-wallpaper.py` | palette-coloured wallpaper, called by `theme.sh` |
 | `scripts/packages.sh` | pacman packages, NVIDIA driver, Rust toolchain |
 | `scripts/install-aur.sh` | builds paru from source, then brave-bin + claude-code |
 | `scripts/preflight.sh` | moves anything that would collide with stow |
@@ -139,8 +192,10 @@ the way is moved to `~/.dotfiles-backup-<timestamp>/`, never overwritten.
 | `scripts/install-zsh.sh` | sets zsh as the login shell (chsh) |
 
 Every top-level directory is a stow package mirroring `$HOME` —
-`hypr/.config/hypr/general.conf` → `~/.config/hypr/general.conf`. `greeter/` and
-`wallpapers/` are the exceptions: copied to `/etc` and `/usr/share`, not stowed.
+`hypr/.config/hypr/general.lua` → `~/.config/hypr/general.lua`. The exceptions
+are `greeter/` and `wallpapers/` (copied to `/etc` and `/usr/share`, not
+stowed) and `palettes/` and `templates/`, which are inputs to `theme.sh` and
+never leave the repo.
 
 ## Notes
 
@@ -178,10 +233,7 @@ Unstowing `zsh` removes `~/.zshrc` but not your login shell — switch back with
 `chsh -s /usr/bin/bash` if you want that too.
 
 <p align="center">
-	<img src="https://raw.githubusercontent.com/catppuccin/catppuccin/main/assets/footers/gray0_ctp_on_line.svg?sanitize=true"/>
-</p>
-
-<p align="center">
-	Palette by <a href="https://github.com/catppuccin/catppuccin">Catppuccin</a> ·
+	Editor colours by <a href="https://github.com/zenbones-theme/zenbones.nvim">zenbones</a> ·
+	Bar and window styling after <a href="https://github.com/ViegPhunt/Arch-Hyprland">ViegPhunt/Arch-Hyprland</a> ·
 	Inspired by <a href="https://github.com/rizukirr/hyprsimple">hyprsimple</a>
 </p>
