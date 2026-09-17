@@ -2,26 +2,51 @@
   "archinstall_language": "English",
   "version": "4.4",
 
+  "_comment_disk": [
+    "pre_mounted_config means archinstall NEVER touches the partition table.",
+    "It reads whatever is already mounted under /mnt and installs into that.",
+    "That is the whole point: this machine keeps a second NVMe with Windows on",
+    "it, and one wrong answer in the guided installer eats it. Partitioning is",
+    "done by hand -- docs/arch-install.md section 2.",
+    "",
+    "Detection is by PARTITION FLAG, not by mountpoint name. archinstall's",
+    "get_efi_partition() filters on the ESP flag in the partition table, so the",
+    "new ESP must be typecode EF00. Mount an ext4 partition at /mnt/boot and it",
+    "is silently skipped, and the bootloader step dies with 'Could not detect",
+    "EFI system partition' after the packages are already installed."
+  ],
   "disk_config": {
     "config_type": "pre_mounted_config",
     "mountpoint": "/mnt"
   },
 
   "_comment_bootloader": [
-    "removable:false is load-bearing on a shared ESP -- do not drop it.",
-    "archinstall's default is TRUE (BootloaderConfiguration in",
-    "lib/models/bootloader.py), which runs `grub-install --removable`: GRUB",
-    "lands in EFI/BOOT/BOOTX64.EFI, the removable-media fallback path, and NO",
-    "efibootmgr entry is created. On a single-OS disk that still boots, via the",
-    "fallback. On a disk that already has Windows it does not: Windows' own",
-    "NVRAM entry wins the BootOrder and you reboot straight into Windows,",
-    "looking exactly like Arch failed to install. It also overwrites",
-    "EFI/BOOT/BOOTX64.EFI, which on many dual-boot ESPs is Windows' fallback",
-    "copy. With false, GRUB installs to EFI/GRUB/ and takes the first NVRAM",
-    "slot -- which is what docs/arch-install.md describes."
+    "systemd-boot, not GRUB, because the new drive has its OWN ESP -- there is",
+    "no partition shared with Windows to work around any more. That deletes the",
+    "two worst failure modes of the old GRUB setup in one go: the compiled-in",
+    "prefix pointing at the wrong directory, and the shim_lock verifier that",
+    "makes Secure Boot impossible without rebuilding the binary.",
+    "",
+    "It costs one thing: Windows does NOT appear in the systemd-boot menu.",
+    "systemd-boot only scans its own ESP and XBOOTLDR, and Windows' bootmgfw.efi",
+    "is on the other disk's ESP. Windows is picked from the firmware boot menu",
+    "instead -- docs/arch-install.md section 6.",
+    "",
+    "'removable' is parsed and stored for every bootloader, but archinstall only",
+    "ACTS on it for GRUB and Limine; _add_systemd_bootloader ignores it. It is",
+    "false here so the file does not imply something that never happens.",
+    "The NVRAM entry comes from `bootctl install` instead -- and bootctl skips",
+    "writing EFI variables, silently, when it believes it is in a container,",
+    "which arch-chroot looks like as of systemd 257. archinstall works around",
+    "that with --variables=yes and falls back to --variables=no if it errors.",
+    "The fallback leaves you with no boot entry, so VERIFY it: section 5.",
+    "",
+    "uki:false is explicit because UKI changes what gets signed for Secure Boot",
+    "-- one arch-linux.efi instead of systemd-bootx64.efi plus vmlinuz-linux."
   ],
   "bootloader_config": {
-    "bootloader": "Grub",
+    "bootloader": "Systemd-boot",
+    "uki": false,
     "removable": false
   },
 
@@ -42,12 +67,18 @@
   },
 
   "_comment_packages": [
-    "openssh is here so `systemctl enable sshd` is actually possible before the",
-    "greeter reboot -- the README calls that cheap insurance, and it is, but",
-    "base does not ship openssh and there is no network to install it from if",
-    "the greeter comes up black."
+    "openssh is here so `systemctl enable sshd` is possible before the greeter",
+    "reboot -- cheap insurance, and base does not ship it, and there is no",
+    "network to install it from if the greeter comes up black.",
+    "",
+    "efibootmgr is strapped automatically by _add_systemd_bootloader, but it is",
+    "listed anyway: section 5 and section 6 both need it by hand, and relying on",
+    "a side effect of someone else's install step is how you end up without it.",
+    "",
+    "os-prober is gone -- it was a GRUB mechanism for putting Windows in the",
+    "menu. systemd-boot does not use it and it would find nothing to do."
   ],
-  "packages": ["git", "stow", "vim", "sudo", "os-prober", "openssh"],
+  "packages": ["git", "stow", "vim", "sudo", "openssh", "efibootmgr"],
 
   "services": [],
   "custom_commands": []

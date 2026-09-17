@@ -1,79 +1,123 @@
-# Installing Arch into free space
+# Installing Arch onto a new drive
 
-Installs Arch onto a GPT disk that already holds another OS, into free space,
-without disturbing it. Hands over to `install.sh` for the desktop.
+Installs Arch onto a **brand new, empty NVMe** that gets its own ESP, on a
+machine that keeps Windows on a different disk. Hands over to `install.sh` for
+the desktop.
 
-Worked example is `europa` — Windows on one NVMe, plus an old Linux partition to
-reclaim. Substitute your own names throughout.
+Worked example is `europa` — a new M.2 alongside a Kingston 2TB holding Windows,
+its 100M ESP, and the previous Arch install. Substitute your own names
+throughout.
 
-Empty disk with nothing to keep? Skip all this and run archinstall's guided
-install.
+Installing into free space on a disk that already has another OS, sharing its
+ESP? That's a different job — GRUB, a shared 100M partition, and a much narrower
+path. `git log -- docs/arch-install.md` has that version.
+
+## What this buys you
+
+A drive of its own is the easy case, and it's worth being explicit about why:
+
+- **Its own ESP.** Nothing shared with Windows, so nothing to destroy by
+  formatting the wrong partition. The old doc's single most dangerous step is
+  gone.
+- **The old install stays bootable.** It is on a different disk with its own
+  bootloader and its own NVRAM entry. It is your fallback until you decide
+  otherwise ([Reclaiming the old partition](#reclaiming-the-old-partition)).
+- **systemd-boot instead of GRUB.** No compiled-in prefix to get wrong, and no
+  shim_lock verifier to fight when you want Secure Boot.
+
+It costs one thing, and you should decide you're fine with it before starting:
+**Windows will not appear in the boot menu.** See [§6](#6-booting-windows).
 
 ## Before you start
 
-- Boot the Arch ISO in **UEFI mode** (pick the `UEFI:` entry for the stick).
+- Seat the M.2 and boot the Arch ISO in **UEFI mode** (pick the `UEFI:` entry for
+  the stick).
 - **Secure Boot off** in firmware — archinstall doesn't set it up. See
   [Secure Boot](#secure-boot).
-- If Windows uses **BitLocker**, disable it first, or a partition change triggers
-  a recovery-key prompt.
+- BitLocker can stay on. Nothing here touches Windows' disk — that's the point
+  of the new drive. (Secure Boot later does; that section says so.)
 
-## 1. Find the partition
+## 1. Find the new disk
+
+Adding an NVMe **renumbers the others**. What was `nvme0n1` yesterday may be
+`nvme1n1` now, depending on which slot enumerates first.
 
 ```bash
-lsblk -o NAME,SIZE,FSTYPE,PARTTYPENAME,MOUNTPOINT
+lsblk -o NAME,SIZE,FSTYPE,PARTTYPENAME,MOUNTPOINT,MODEL
 ```
 
-europa:
+europa, after fitting the new drive:
 
-| Part | Size | Type | Plan |
+| Disk | Size | Model | Plan |
 |---|---|---|---|
-| `p1` | 100M | EFI System | mount, **never format** — shared with Windows |
-| `p2` | 16M | MS reserved | leave |
-| `p3` | 1.4T | ntfs — Windows | leave |
-| `p4` | 894M | Windows recovery | leave |
-| `p6` | 500G | ext4 — old Linux | **reclaim this** |
+| ? | 1.9T | KINGSTON SKC3000D | Windows + old ESP + old Arch — **leave entirely** |
+| ? | 1.8T | WDC WD20EARS | NTFS data — leave |
+| ? | — | the new one | **install here** |
 
-**Watch out:** the ESP is shared with Windows. Formatting it destroys Windows'
-boot files. It gets mounted, never `mkfs`'d.
-
-## 2. Reclaim it
+Identify by **model and size**, then pin it down once:
 
 ```bash
-sudo wipefs -a /dev/nvme0n1p6            # the partition you're freeing
-sudo sgdisk --delete=6 /dev/nvme0n1      # 6 = the number at the end of that name
-sudo partprobe /dev/nvme0n1
-sudo parted /dev/nvme0n1 unit GB print free
+DISK=/dev/nvme1n1        # the NEW drive -- whatever lsblk actually called it
+lsblk -o NAME,SIZE,MODEL "$DISK"
 ```
 
-That space should now show as free, and every other partition unchanged.
+Every command below uses `$DISK`. Set it in each shell you open, and re-read that
+`lsblk` line before the first destructive one.
 
-**Watch out:** `wipefs` before `--delete`, not after. Deleting a partition only
-removes the table entry — the old filesystem's superblock stays on the sectors,
-and the partition you create next inherits it.
+**Watch out:** the new drive is the one with **no partitions and no filesystems**.
+If `$DISK` lists an `ntfs` child or a partition named `Basic data`, you have
+Windows' disk. Stop and re-read.
 
-## 3. Create, format, mount
+**Watch out:** renumbering doesn't hurt the old Arch install — its `/etc/fstab`
+mounts by UUID, not by `/dev` name. Don't "fix" anything there.
+
+## 2. Partition it
+
+Fresh GPT, two partitions — a 1G ESP and everything else for root:
 
 ```bash
-sudo sgdisk --new=0:0:0 --typecode=0:8300 --change-name=0:arch /dev/nvme0n1
-sudo partprobe /dev/nvme0n1
-lsblk /dev/nvme0n1                       # read the new partition's name
+sudo sgdisk --zap-all "$DISK"
+sudo sgdisk --new=1:0:+1G  --typecode=1:ef00 --change-name=1:ESP  "$DISK"
+sudo sgdisk --new=2:0:0    --typecode=2:8300 --change-name=2:arch "$DISK"
+sudo partprobe "$DISK"
+lsblk "$DISK"
 ```
 
-**Watch out:** sgdisk reuses the **lowest** free number, not the next one up. On
-europa, deleting `p6` and creating one gave **`p5`**. Read it, don't assume.
+`--zap-all` is safe here and only here: the drive is empty. It is the one command
+in this document that would be unrecoverable pointed at the wrong disk.
+
+**Watch out:** `ef00` on partition 1 is load-bearing, and not just for the
+firmware. archinstall's pre-mounted mode finds the ESP by reading the **partition
+flag**, not by noticing what you mounted where. Get the typecode wrong and it
+installs the entire system, then fails at the bootloader step with *"Could not
+detect EFI system partition"*.
+
+**Watch out:** 1G, not the 100M Windows hands out. systemd-boot keeps the kernel
+and initramfs **on the ESP**, and a fallback initramfs is not small. 100M fits
+one kernel and no room to be wrong.
+
+## 3. Format and mount
+
+The ESP mounts at **`/mnt/boot`** — not `/mnt/boot/efi`:
 
 ```bash
-sudo mkfs.ext4 -L arch /dev/nvme0n1p5    # whatever the line above actually says
-sudo mount /dev/nvme0n1p5 /mnt
-sudo mkdir -p /mnt/boot/efi
-sudo mount /dev/nvme0n1p1 /mnt/boot/efi  # the ESP
+sudo mkfs.fat -F32 -n ESP "${DISK}p1"
+sudo mkfs.ext4 -L arch "${DISK}p2"
 
-ls /mnt/boot/efi/EFI                     # must list Microsoft/ — Windows' boot files
+sudo mount "${DISK}p2" /mnt
+sudo mount --mkdir "${DISK}p1" /mnt/boot
+
+findmnt /mnt /mnt/boot    # ext4 on p2, vfat on p1 -- and nothing else
 ```
 
-**Watch out:** if that `ls` doesn't show the other OS, you mounted the wrong
-partition as the ESP. Unmount and recheck — `mkfs` never prompts, and never warns
-that something is already there.
+**Watch out:** `/mnt/boot`, not `/mnt/boot/efi`. systemd-boot's entries point at
+`/vmlinuz-linux` relative to the partition they live on, so the kernel has to be
+on the ESP. Mount the ESP a level deeper and the kernel lands on ext4, which
+systemd-boot cannot read — the menu appears and every entry fails.
+
+**Watch out:** do **not** mount the old 100M ESP anywhere under `/mnt`.
+archinstall installs into everything it finds mounted there, and it would end up
+in the new `fstab`. The new install should never touch that partition again.
 
 ## 4. archinstall
 
@@ -82,9 +126,9 @@ curl -fLO https://raw.githubusercontent.com/Benj181/conf-hyprland/main/docs/arch
 archinstall --config archinstall-europa.json
 ```
 
-The file already sets pre-mounted disk config, GRUB, `removable: false`,
-hostname, timezone `Europe/Oslo`, `no` keymap, NetworkManager and the base
-packages. **Type these in the TUI:**
+The file already sets pre-mounted disk config, systemd-boot, hostname, timezone
+`Europe/Oslo`, `no` keymap, NetworkManager and the base packages. **Type these in
+the TUI:**
 
 | Field | What |
 |---|---|
@@ -96,72 +140,82 @@ packages. **Type these in the TUI:**
 Everything else: leave alone. Don't pass `--silent` — the TUI is your last look at
 the disk config.
 
-**Watch out:** `"removable": false` in the JSON is load-bearing. With `true`, GRUB
-installs to `EFI/BOOT/BOOTX64.EFI` with **no NVRAM entry**, Windows wins the boot
-order, and it looks exactly like Arch never installed.
-
 **Watch out:** the file says `"version": "4.4"`. The ISO ships whatever's current
 and the schema drifts. If archinstall rejects it, check `archinstall --version`
 and reconcile.
 
-## 5. GRUB
+**Watch out:** if you're editing the JSON, push it before you boot the ISO. That
+`curl` reads GitHub `main`, not your working copy.
 
-**archinstall installs GRUB wrong — redo it.** It builds `grubx64.efi` with the
-prefix pointing at `/boot/efi/grub` on the ESP instead of `/boot/grub` on the
-root. The prefix is compiled into the binary and is where GRUB reads its config
-at boot, so you get a menu with no Windows, and editing `/boot/grub/grub.cfg`
-changes nothing.
+## 5. Verify the boot entry
 
-Reinstall it. `--boot-directory` is what rebuilds the prefix:
+archinstall ran `bootctl install` for you. Unlike the old GRUB setup, it very
+probably got it right — but it can leave you with a bootloader and **no NVRAM
+entry**, silently, and that looks exactly like a failed install. Check before you
+reboot, not after:
 
 ```bash
 sudo arch-chroot /mnt
-echo 'GRUB_DISABLE_OS_PROBER=false' >> /etc/default/grub    # Windows in the menu
-grub-install --target=x86_64-efi --efi-directory=/boot/efi \
-             --boot-directory=/boot --bootloader-id=GRUB
-grub-mkconfig -o /boot/grub/grub.cfg
+bootctl status        # Product: systemd-boot, ESP: /boot
+bootctl list          # one entry per kernel
+efibootmgr            # "Linux Boot Manager" must be here
 ```
 
-Delete the stray config, and any old distro's boot chain — the firmware falls
-through to it and loads that instead:
+If `efibootmgr` has no Linux entry, write it yourself — still in the chroot:
 
 ```bash
-sudo rm -rf /boot/efi/grub /boot/efi/EFI/ubuntu   # if present
-efibootmgr                                        # find the old distro's entry
-sudo efibootmgr -B -b 0005                        # delete it
-sudo efibootmgr -o 0001,0000                      # GRUB first, then Windows
+bootctl install --variables=yes
 ```
 
-Keep `EFI/Microsoft/` and `EFI/Boot/`.
+`bootctl` skips EFI variables when it thinks it's running in a container, and
+`arch-chroot` looks like one to systemd 257 and up. archinstall passes
+`--variables=yes` to force it, but falls back to `--variables=no` if that errors
+— and the fallback is what leaves you with nothing.
 
-Verify — the prefix first, before anything else:
+Then put it first. Windows and the old install both have entries and one of them
+currently wins:
 
 ```bash
-strings /boot/efi/EFI/GRUB/grubx64.efi | grep -E '/boot.*grub'
-#   (,gpt5)/boot/grub    correct
-#   /boot/efi/grub       wrong -- reinstall
-
-efibootmgr | grep -E "BootOrder|GRUB"        # GRUB entry exists, and is first
-sudo grep -c menuentry /boot/grub/grub.cfg   # >1, with Windows among them
+efibootmgr                          # read the boot numbers
+efibootmgr -o 0003,0000,0001        # Linux Boot Manager, then the rest
 ```
 
-**Watch out:** deleting the stray config on its own does nothing — the prefix
-sends GRUB back to it. Rebuild the binary.
-
-**Watch out:** `grep boot/grub` matches nothing when the prefix is wrong —
-`/boot/efi/grub` doesn't contain `boot/grub`. Use the pattern above.
-
-**Watch out:** re-running `grub-install` later invalidates a Secure Boot setup —
-new binary, no signature. If you've done [Secure Boot](#secure-boot), re-sign
-after every one.
+Leave the old GRUB entry in place. It still boots the old install off the other
+disk, and until the new one is proven that is exactly what you want.
 
 ```bash
 exit
 sudo umount -R /mnt
-reboot                                   # pull the USB
+reboot                              # pull the USB
 ```
 
-## 6. First boot → the rice
+## 6. Booting Windows
+
+**Windows is not in the systemd-boot menu, and won't be.** systemd-boot only
+scans its own ESP and XBOOTLDR for boot entries. Windows' `bootmgfw.efi` is on
+the other disk's ESP, and a type 1 entry's `efi` path can't reach across
+partitions. This is the trade for not sharing an ESP.
+
+Two ways to get there:
+
+- **The firmware boot menu** — F8 on ASUS, held at power-on. Windows has its own
+  NVRAM entry; pick it.
+- **One-shot from Arch**, which is nicer for a reboot you already planned:
+
+```bash
+efibootmgr | grep -i windows          # find its boot number
+sudo efibootmgr -n 0000 && reboot     # BootNext -- this reboot only
+```
+
+`-n` sets `BootNext`, which the firmware consumes once and clears. `BootOrder` is
+untouched, so the boot after that comes back to Arch on its own.
+
+**Watch out:** copying `EFI/Microsoft/` onto the new ESP to force an entry is a
+trap. `bootmgfw.efi` reads its BCD from the ESP it was loaded from, so you get a
+second boot configuration that Windows Update never patches and that drifts out
+of sync with the real one. Use the firmware menu.
+
+## 7. First boot → the rice
 
 You land at a TTY — no display manager yet, that's expected.
 
@@ -194,13 +248,15 @@ sign the boot chain. Arch ships nothing Microsoft-signed, so there's no shortcut
 you become the CA. Windows keeps booting because Microsoft's keys go in alongside
 yours.
 
-Four steps, and **§3 is the one everybody misses**.
+Three steps. On GRUB this was four, and the extra one was rebuilding the binary
+to strip a verifier that refused to load anything — systemd-boot has no
+equivalent, so that whole problem is gone.
 
 ### 1. Setup Mode
 
 Enrolling keys needs the firmware's factory keys cleared (ASUS: *Boot → Secure
 Boot → Key Management → Clear Secure Boot Keys*). Leave Secure Boot itself off
-until §4.
+until §3.
 
 ```bash
 sudo pacman -S sbctl
@@ -217,84 +273,107 @@ sudo sbctl enroll-keys -m        # -m keeps Microsoft's keys, or Windows won't b
 Enrolling a PK exits Setup Mode on its own — `status` flipping to *Setup Mode:
 Disabled* here is the success case, not a problem.
 
-### 3. Rebuild GRUB without shim_lock
+### 3. Sign, then turn it on
 
-Arch's `grubx64.efi` has the **shim_lock verifier compiled in**. It demands
-shim's EFI protocol before GRUB will load anything — its own modules, the kernel,
-the initramfs. You don't have shim; you have your own keys. So every load fails
-and GRUB drops to a rescue prompt:
-
-```
-error: verification requested but nobody cares: /boot/grub/x86_64-efi/normal.mod
-```
-
-Signing more files can't fix this. `initramfs-linux.img` and `intel-ucode.img`
-are cpio archives, not PE binaries — they cannot be signed at all. Rebuild the
-binary without the verifier instead:
+Two files, and that is genuinely all:
 
 ```bash
-sudo grub-install --target=x86_64-efi --efi-directory=/boot/efi \
-                  --boot-directory=/boot --bootloader-id=GRUB \
-                  --modules="tpm" --disable-shim-lock
-```
-
-Same paths as §5, so it stays one `grubx64.efi` and one NVRAM entry — no
-duplicate. `grub.cfg` is untouched and needs no regenerating.
-
-### 4. Sign, then turn it on
-
-`grub-install` writes a fresh unsigned binary, so signing comes **after** it:
-
-```bash
-sudo sbctl sign -s /boot/efi/EFI/GRUB/grubx64.efi
+sudo sbctl sign -s /boot/EFI/systemd/systemd-bootx64.efi
+sudo sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
 sudo sbctl sign -s /boot/vmlinuz-linux
 sudo sbctl verify
 # re-enable Secure Boot in firmware, reboot
 sudo sbctl status                # Secure Boot: Enabled, Setup Mode: Disabled
 ```
 
-Then boot **Windows** from the GRUB menu once. That's the half `sbctl status`
-can't tell you about.
+The **initramfs is not signed and does not need to be.** The firmware verifies
+systemd-boot; systemd-boot hands the kernel to `LoadImage`, so the firmware
+verifies that too. The initramfs arrives through the kernel's EFI stub after
+verification is over. This is exactly what GRUB got wrong: its shim_lock verifier
+demanded a signature on the initramfs, which is a cpio archive and *cannot carry
+one*.
 
 `-s` adds a file to sbctl's database, and the `zz-sbctl.hook` pacman hook re-signs
 everything in there after any transaction touching `/boot` — so kernel upgrades
 take care of themselves.
 
-**Watch out:** `sbctl verify` lists every `EFI/Microsoft/` and `EFI/Boot/` file
-as *not signed*. That's correct and expected — they're Microsoft-signed, not
-yours, and `-m` in §2 is what makes the firmware trust them. Never try to sign
-them. Only `grubx64.efi` and `vmlinuz-linux` are yours.
+**Watch out:** `bootctl update`, and the `systemd-boot-update.service` that runs
+it after a systemd upgrade, write a **fresh unsigned** `systemd-bootx64.efi`.
+Run `sudo sbctl verify` after any systemd upgrade. If it reports the loader
+unsigned, `sbctl sign -s` it again before rebooting.
 
-**Watch out:** every later `grub-install` wipes the signature — firmware update,
-prefix fix, kernel parameters, anything. Re-run the `sbctl sign -s` on
-`grubx64.efi` straight after, or the next boot lands in rescue. The pacman hook
-does **not** cover this; a hand-run `grub-install` isn't a pacman transaction.
+**Watch out:** `sbctl verify` lists `EFI/BOOT/BOOTX64.EFI` on **Windows' ESP** as
+unsigned if that partition happens to be mounted. Leave it alone — it isn't
+yours, and `-m` in §2 is what makes the firmware trust Microsoft's chain. Only
+the files on the new drive's `/boot` are yours to sign.
 
 **Watch out:** BitLocker treats a Secure Boot state change as tampering and asks
 for the recovery key on the first Windows boot after. Have it ready —
 `account.microsoft.com/devices/recoverykey`.
 
-**Watch out:** `strings grubx64.efi | grep shim_lock` still matches after §3.
-The symbol names stay in the binary; `--disable-shim-lock` stops the verifier
-being *registered*. Booting is the only real test.
+## Reclaiming the old partition
+
+Don't do this on install night. The old Arch on the other disk is your fallback,
+and it costs you nothing but 500G to keep it until the new system has survived a
+week, a kernel upgrade, and the greeter.
+
+When you're ready, from the new install:
+
+```bash
+lsblk -o NAME,SIZE,FSTYPE,LABEL,MODEL     # find the old root -- ext4, LABEL=arch
+```
+
+Make sure it isn't mounted, then take the space back:
+
+```bash
+sudo wipefs -a /dev/nvme0n1p5             # the OLD root, on the OTHER disk
+sudo sgdisk --delete=5 /dev/nvme0n1
+sudo partprobe /dev/nvme0n1
+```
+
+**Watch out:** `wipefs` before `--delete`, not after. Deleting a partition only
+removes the table entry — the old filesystem's superblock stays on the sectors,
+and whatever you create there next inherits it.
+
+Then clear the boot entry that pointed at it, and the GRUB directory on the old
+ESP:
+
+```bash
+efibootmgr                                # find the old GRUB entry
+sudo efibootmgr -B -b 0001                # delete it
+sudo mount /dev/nvme0n1p1 /mnt            # the OLD, 100M ESP
+sudo rm -rf /mnt/EFI/GRUB
+sudo umount /mnt
+```
+
+Keep `EFI/Microsoft/` and `EFI/Boot/`. Windows boots from them.
+
+The free space is now unallocated on Windows' disk. Extend the Windows partition
+into it from **Disk Management inside Windows** — it's contiguous and adjacent,
+so the *Extend Volume* option will be live. Don't try to do it from Linux.
+
+**Watch out:** this is the one irreversible section in this document. Everything
+before it leaves both systems bootable.
 
 ## If it goes wrong
 
-- **GRUB doesn't appear, or its menu has no Windows, or it ignores your edits** —
-  check the prefix first (§5), not the config. A wrong prefix produces all three,
-  and no amount of editing `/boot/grub/grub.cfg` touches the file GRUB is actually
-  reading. Firmware boot menu → Windows, then `arch-chroot` from the ISO and
-  re-run §5.
-- **The firmware boots an old distro instead** — its NVRAM entry is winning.
-  `efibootmgr -B -b <n>` to delete it, `-o` to put GRUB first (§5).
-- **GRUB drops to a rescue prompt saying something wasn't verified** — Secure Boot
-  is on and `grubx64.efi` still has shim_lock. Turn Secure Boot off in firmware to
-  get booting again, then rebuild and re-sign (§Secure Boot 3–4). Signing more
-  files is the wrong move; the initramfs can't be signed.
-- **It booted fine, then stopped after you touched GRUB** — `grub-install` wiped
-  the signature. Turn Secure Boot off, `sbctl sign -s` the binary, turn it back on.
-- **Arch won't boot** — Windows still does. Re-flash the USB, start from §1.
-- **greetd comes up black** — at the GRUB menu press `e`, append
+- **The new drive doesn't appear in the boot menu** — no NVRAM entry was written.
+  Boot the ISO, mount and `arch-chroot`, then §5. This is the failure mode to
+  expect, because `bootctl` fails at it *quietly*.
+- **archinstall dies with "Could not detect EFI system partition"** — the ESP's
+  typecode isn't `ef00`, or it isn't mounted under `/mnt`. `sgdisk -p "$DISK"`
+  to check, `sgdisk --typecode=1:ef00 "$DISK"` to fix, then re-run §4. The
+  partition is not reformatted by changing its type.
+- **The menu appears but entries fail to load the kernel** — the ESP is mounted
+  at `/boot/efi` instead of `/boot`, so the kernel is on ext4 where systemd-boot
+  can't reach it. Redo §3 and reinstall.
+- **The firmware boots Windows or the old Arch instead** — their NVRAM entries
+  are winning. `efibootmgr -o` to put Linux Boot Manager first (§5).
+- **The new install won't boot at all** — the old one still does, off the other
+  disk. Pick it from the firmware menu, and you have a full desktop to debug
+  from. That's what keeping it is for.
+- **Boot stops working right after a systemd upgrade, with Secure Boot on** —
+  `bootctl update` replaced the signed loader. Turn Secure Boot off, `sbctl sign
+  -s` the loader, turn it back on (Secure Boot §3).
+- **greetd comes up black** — at the boot menu press `e`, append
   `systemd.unit=multi-user.target`, and boot to a TTY with greetd never started.
-- **You want the deleted partition back** — you can't. §2 is the one irreversible
-  step here.

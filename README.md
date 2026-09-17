@@ -72,7 +72,8 @@
 ## Install
 
 No Arch yet? Start with **[docs/arch-install.md](docs/arch-install.md)** — it
-installs alongside an existing OS and hands off here at the first TTY login.
+installs onto a dedicated drive alongside an existing Windows disk, and hands off
+here at the first TTY login.
 
 ```bash
 git clone https://github.com/Benj181/conf-hyprland.git ~/hyprland-dotfiles
