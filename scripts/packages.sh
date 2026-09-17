@@ -316,10 +316,10 @@ if [ "$(id -u)" -eq 0 ]; then
     exit 1
 fi
 
-echo "==> Installing the Rust toolchain (stable, complete profile)"
+echo "==> Installing the Rust toolchain (stable, default profile)"
 # --no-self-update: Arch builds rustup with self-update disabled ("you should
 # probably use your system package manager"), so let it not try.
-rustup toolchain install stable --profile complete --no-self-update
+rustup toolchain install stable --profile default --no-self-update
 rustup default stable
 
 # --profile applies ONLY when a toolchain is first installed. On a machine that
