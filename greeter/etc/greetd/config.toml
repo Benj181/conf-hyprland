@@ -40,9 +40,9 @@ vt = 1
 # start-hyprland is Hyprland's own watchdog wrapper (/usr/bin/start-hyprland,
 # from the `hyprland` package). Everything after `--` is passed to Hyprland.
 #
-# The greeter compositor config is deliberately NOT ~/.config/hypr/hyprland.conf:
+# The greeter compositor config is deliberately NOT ~/.config/hypr/hyprland.lua:
 # this runs as `greeter`, which cannot read /home/baas (mode 750). See
-# /etc/nwg-hello/hyprland.conf.
+# /etc/nwg-hello/hyprland.lua.
 command = "/usr/bin/start-hyprland -- -c /etc/nwg-hello/hyprland.lua"
 
 # greetd creates this account from /usr/lib/sysusers.d/greetd.conf when the

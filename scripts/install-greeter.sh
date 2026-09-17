@@ -242,7 +242,7 @@ echo "    config -> /etc/nwg-hello/, /etc/greetd/"
 run sudo mkdir -p /etc/nwg-hello
 install_config "$SRC/etc/nwg-hello/nwg-hello.json" /etc/nwg-hello/nwg-hello.json
 install_config "$SRC/etc/nwg-hello/nwg-hello.css"  /etc/nwg-hello/nwg-hello.css
-install_config "$SRC/etc/nwg-hello/hyprland.conf"  /etc/nwg-hello/hyprland.conf
+install_config "$SRC/etc/nwg-hello/hyprland.lua"   /etc/nwg-hello/hyprland.lua
 install_config "$SRC/etc/greetd/config.toml"       /etc/greetd/config.toml
 
 # ---------------------------------------------------------------------------
