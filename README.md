@@ -15,35 +15,8 @@
 </p>
 
 <p align="center">
-	<img src="assets/02-tiling.png" width="100%"/>
+	<img src="assets/desktop.png" width="100%"/>
 </p>
-
-## Previews
-
-<details>
-<summary>🖥️ &nbsp;Desktop</summary>
-<img src="assets/01-desktop.png" width="100%"/>
-</details>
-
-<details>
-<summary>📊 &nbsp;Bar</summary>
-<img src="assets/06-bar.png" width="100%"/>
-</details>
-
-<details>
-<summary>🚀 &nbsp;Launcher</summary>
-<img src="assets/03-rofi.png" width="100%"/>
-</details>
-
-<details>
-<summary>⏻ &nbsp;Power menu</summary>
-<img src="assets/04-powermenu.png" width="100%"/>
-</details>
-
-<details>
-<summary>🔔 &nbsp;Notifications</summary>
-<img src="assets/05-notify.png"/>
-</details>
 
 ## Contents
 
@@ -200,7 +173,7 @@ never leave the repo.
 ## Notes
 
 - **This targets one machine** (`europa`) — no hardware detection. Everything
-  machine-specific is in `hypr/.config/hypr/hardware.conf`.
+  machine-specific is in `hypr/.config/hypr/hardware.lua`.
 - **Never `pacman -Sy <pkg>`** — it's a partial upgrade and it breaks Arch. Same
   for `paru -Sy`. `paru -Syu` is the update path, including AUR.
 - **Reboot after any `-Syu` that lands a kernel**, or the NVIDIA modules won't load.
