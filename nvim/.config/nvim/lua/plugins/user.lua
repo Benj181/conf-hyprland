@@ -6,13 +6,34 @@
 return {
 
   -- == Examples of Adding Plugins ==
+
+  -- zenwritten, from the zenbones collection. Picked over writing a
+  -- colorscheme out of palettes/*.env because a hand-rolled one has to cover
+  -- every treesitter and LSP-semantic-token group to not look broken, and the
+  -- interesting part of a monochrome editor theme is not the colour list --
+  -- it is deciding what carries meaning once colour cannot. zenbones answers
+  -- that with contrast and font variation, which is exactly the brief.
+  --
+  -- zenwritten specifically: it is the achromatic member of the family, and it
+  -- keeps colour only for diagnostics, diffs and search matches -- the same
+  -- line this repo's palette draws for the bar and the terminal.
   {
-    "catppuccin/nvim",
-    name = "catppuccin",
+    "zenbones-theme/zenbones.nvim",
+    -- lush.nvim is only needed to *generate* a customised variant. compat mode
+    -- uses the pre-built colorschemes that ship in the plugin's colors/ dir,
+    -- which is all that is wanted here -- the chrome overrides in astroui.lua
+    -- do the palette matching instead. Without this flag `colorscheme
+    -- zenwritten` fails outright on a missing lush.
+    --
+    -- g:bones_compat, not g:zenbones_compat. autoload/bones.vim checks
+    -- `g:<colors_name>_compat` first and falls back to `g:bones_compat`, so
+    -- the name in the plugin's own README only covers the scheme literally
+    -- called "zenbones" -- it does nothing for zenwritten. The generic flag
+    -- also means trying another variant while experimenting does not need a
+    -- second edit here.
+    lazy = false,
     priority = 1000,
-    opts = {
-      flavour = "mocha", -- latte, frappe, macchiato, mocha
-    },
+    init = function() vim.g.bones_compat = 1 end,
   },
 
 
