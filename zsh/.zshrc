@@ -17,6 +17,7 @@ zstyle ':completion:*' menu select
 autoload -Uz colors && colors
 alias ls='ls --color=auto'
 alias grep='grep --color=auto'
+alias leetcode="nvim leetcode.nvim"
 PROMPT='[%n@%m %1~]%# '
 
 # Fish-style suggestions as you type. #6c7086 (Catppuccin Mocha overlay0) is

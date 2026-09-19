@@ -2,6 +2,13 @@
 -- PLEASE REMOVE THE EXAMPLES YOU HAVE NO INTEREST IN BEFORE ENABLING THIS FILE
 -- Here are some examples:
 
+-- zenbones compat flag (see the zenbones spec below). Set while the spec is
+-- read rather than in the plugin's `init`: AstroNvim applies the colorscheme
+-- from inside another plugin's init (mason-tool-installer requires astrocore),
+-- and lazy gives no ordering between init functions, so adding an unrelated
+-- plugin can make the colorscheme run first and fail on a missing lush.
+vim.g.bones_compat = 1
+
 ---@type LazySpec
 return {
 
@@ -31,9 +38,10 @@ return {
     -- called "zenbones" -- it does nothing for zenwritten. The generic flag
     -- also means trying another variant while experimenting does not need a
     -- second edit here.
+    --
+    -- The flag itself is set at the top of this file, not in `init`.
     lazy = false,
     priority = 1000,
-    init = function() vim.g.bones_compat = 1 end,
   },
 
 

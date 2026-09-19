@@ -91,3 +91,5 @@ hl.animation({ leaf = "border",     enabled = true, speed = 2, bezier = "snappy"
 
 -- QT apps follow qt6ct, which install-themes.sh points at the generated palette.
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
+
+hl.env("HYPRSHOT_DIR", os.getenv("HOME") .. "/Pictures/screenshots")
