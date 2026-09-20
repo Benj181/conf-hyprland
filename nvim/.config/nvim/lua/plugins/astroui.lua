@@ -56,6 +56,28 @@ return {
         TabLine = { bg = p.bg_alt, fg = p.muted },
         TabLineFill = { bg = p.bg_alt },
         TabLineSel = { bg = p.bg, fg = p.accent },
+
+        -- Differentiation via weight/slant/brightness instead of hue --
+        -- zenbones' own trick elsewhere (Comment/String are already italic,
+        -- Statement is already bold). Same grays already in the palette, no
+        -- new colors, so it stays monochrome.
+        Type = { fg = p.text, bold = true }, -- types, classes, interfaces, structs, enums: brighter + bold
+        ["@type"] = { link = "Type" },
+        ["@lsp.type.class"] = { link = "Type" },
+        ["@lsp.type.interface"] = { link = "Type" },
+        ["@lsp.type.struct"] = { link = "Type" },
+        ["@lsp.type.enum"] = { link = "Type" },
+
+        Function = { bold = true }, -- function/method names: same gray, just bold
+        ["@function"] = { link = "Function" },
+        ["@function.call"] = { link = "Function" },
+        ["@method"] = { link = "Function" },
+        ["@method.call"] = { link = "Function" },
+
+        -- Parameters read as subordinate to locals: dimmer and italic, the
+        -- same visual language zenwritten already uses for Comment.
+        ["@variable.parameter"] = { fg = p.dim, italic = true },
+        ["@lsp.type.parameter"] = { link = "@variable.parameter" },
       },
     },
     -- Icons can be configured throughout the interface
