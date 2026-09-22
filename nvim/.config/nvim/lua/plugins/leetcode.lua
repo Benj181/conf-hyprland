@@ -53,6 +53,14 @@ return {
   lazy = vim.fn.argv(0, -1) ~= "leetcode.nvim",
   build = function() vim.cmd "TSInstall html" end,
   dependencies = { "MunifTanjim/nui.nvim", "nvim-lua/plenary.nvim" },
+  -- capital `L` group: lowercase `<Leader>l` is AstroNvim's LSP group
+  -- (`<Leader>lr` is already bound to LSP rename on Rust buffers)
+  keys = {
+    { "<leader>Lr", "<cmd>Leet run<cr>", desc = "LeetCode: Run tests" },
+    { "<leader>Ls", "<cmd>Leet submit<cr>", desc = "LeetCode: Submit" },
+    { "<leader>Ll", "<cmd>Leet list<cr>", desc = "LeetCode: List questions" },
+    { "<leader>Lt", "<cmd>Leet tabs<cr>", desc = "LeetCode: Tabs" },
+  },
   opts = {
     arg = "leetcode.nvim",
     lang = "rust",

@@ -44,6 +44,15 @@ return {
         CursorLine = { bg = p.bg_alt },
 
         Visual = { bg = p.surface_hi },
+
+        -- Snacks picker (find_files, buffers, leetcode's question list, ...)
+        -- renders in a float whose bg is NormalFloat (bg_alt). Its cursor-row
+        -- highlight defaults to a plain link to CursorLine, whose bg is *also*
+        -- bg_alt -- identical colors, so the current row was invisible and
+        -- only the Tab multi-select dot read as "selection". The dot itself
+        -- is blanked out instead of recolored -- see plugins/snacks.lua.
+        SnacksPickerListCursorLine = { bg = p.surface_hi },
+
         Pmenu = { bg = p.surface, fg = p.text },
         PmenuSel = { bg = p.surface_hi, fg = p.accent },
         PmenuSbar = { bg = p.surface },
