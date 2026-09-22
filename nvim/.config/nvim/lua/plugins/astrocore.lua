@@ -43,7 +43,8 @@ return {
         spell = false,
         signcolumn = "yes",
         wrap = false,
-        shell = "/bin/bash",       -- or "/usr/bin/zsh", "/usr/bin/fish"
+        showtabline = 0, -- never show; was in polish.lua, which never ran
+        shell = "/usr/bin/zsh",    -- matches the login shell set with chsh
         shellcmdflag = "-c",
         shellquote = "",
         shellxquote = "",

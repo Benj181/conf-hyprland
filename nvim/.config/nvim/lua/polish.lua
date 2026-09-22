@@ -1,17 +1,9 @@
-if true then return {} end -- WARN: REMOVE THIS LINE TO ACTIVATE THIS FILE
-
 -- This will run last in the setup process.
 -- This is just pure lua so anything that doesn't
--- fit in the normal config locations above can go here
-return {
-  {
-    "AstroNvim/astrocore",
-    opts = {
-      options = {
-        opt = {
-          showtabline = 0, -- never show
-        },
-      },
-    },
-  },
-}
+-- fit in the normal config locations above can go here.
+--
+-- NOTE: `init.lua` loads this with `require "polish"` and throws the return value
+-- away, so this file has to *do* things directly -- returning a LazySpec table
+-- here is silently ignored. Plugin specs belong in `lua/plugins/` instead.
+-- The `showtabline = 0` that used to live here now sits in
+-- `lua/plugins/astrocore.lua`, where it actually takes effect.
