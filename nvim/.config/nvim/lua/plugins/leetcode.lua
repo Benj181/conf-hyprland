@@ -55,11 +55,39 @@ return {
   dependencies = { "MunifTanjim/nui.nvim", "nvim-lua/plenary.nvim" },
   -- capital `L` group: lowercase `<Leader>l` is AstroNvim's LSP group
   -- (`<Leader>lr` is already bound to LSP rename on Rust buffers)
+  --
+  -- Covers every active top-level `:Leet` subcommand (see
+  -- leetcode.nvim's lua/leetcode/command/init.lua:601 `cmd.commands`)
+  -- except: `test`/`hints` (pure aliases of run/info), the commented-out
+  -- `session` subtree (inactive in the plugin itself), and `cookie`/
+  -- `cache`/`fix` (account sign-in and cache-wipe admin actions -- `fix`
+  -- specifically deletes the local cache and quits Neovim, not something
+  -- to bind to a key you might fat-finger).
   keys = {
-    { "<leader>Lr", "<cmd>Leet run<cr>", desc = "LeetCode: Run tests" },
-    { "<leader>Ls", "<cmd>Leet submit<cr>", desc = "LeetCode: Submit" },
-    { "<leader>Ll", "<cmd>Leet list<cr>", desc = "LeetCode: List questions" },
-    { "<leader>Lt", "<cmd>Leet tabs<cr>", desc = "LeetCode: Tabs" },
+    -- solving a question
+    { "<leader>Lr", "<cmd>Leet run<cr>", desc = "Run tests" },
+    { "<leader>Ls", "<cmd>Leet submit<cr>", desc = "Submit" },
+    { "<leader>LR", "<cmd>Leet reset<cr>", desc = "Reset code" },
+    { "<leader>Lp", "<cmd>Leet last_submit<cr>", desc = "Restore last submission" },
+    { "<leader>Lj", "<cmd>Leet inject<cr>", desc = "Re-inject boilerplate" },
+    { "<leader>Lf", "<cmd>Leet fold<cr>", desc = "Fold imports" },
+    { "<leader>Ly", "<cmd>Leet yank<cr>", desc = "Yank solution code" },
+
+    -- finding a question
+    { "<leader>Ll", "<cmd>Leet list<cr>", desc = "List questions" },
+    { "<leader>Lz", "<cmd>Leet random<cr>", desc = "Random question" },
+    { "<leader>Ld", "<cmd>Leet daily<cr>", desc = "Question of the day" },
+    { "<leader>Lo", "<cmd>Leet open<cr>", desc = "Open in browser" },
+
+    -- navigation / UI
+    { "<leader>Lt", "<cmd>Leet tabs<cr>", desc = "Tabs" },
+    { "<leader>Lm", "<cmd>Leet menu<cr>", desc = "Menu" },
+    { "<leader>Lv", "<cmd>Leet restore<cr>", desc = "Restore layout" },
+    { "<leader>Lc", "<cmd>Leet console<cr>", desc = "Console" },
+    { "<leader>Li", "<cmd>Leet info<cr>", desc = "Info" },
+    { "<leader>LD", "<cmd>Leet desc<cr>", desc = "Toggle description" },
+    { "<leader>La", "<cmd>Leet lang<cr>", desc = "Change language" },
+    { "<leader>Lq", "<cmd>Leet exit<cr>", desc = "Exit" },
   },
   opts = {
     arg = "leetcode.nvim",
