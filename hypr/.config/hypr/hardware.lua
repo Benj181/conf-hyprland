@@ -4,7 +4,7 @@
 --
 -- europa: RTX 5070 Ti (Blackwell GB203), nvidia-open (open kernel modules),
 --         DP-3 Microstep MPG271QX OLED (main, centre) + DP-2 ASUS VG27AQM1A
---         (left). Both 2560x1440, both landscape. DP-3 runs 360Hz, DP-2 240Hz.
+--         (left). Both 2560x1440, both landscape. DP-3 runs 240Hz (see below), DP-2 240Hz.
 
 -- NVIDIA. Blackwell is open-kernel-module only, so there is no proprietary
 -- variant to account for here.
@@ -12,9 +12,17 @@ hl.env("LIBVA_DRIVER_NAME", "nvidia")
 hl.env("GBM_BACKEND", "nvidia-drm")
 hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
 
+-- Legacy (non-atomic) KMS. The DP-3 OLED drops and reconnects its DP link when
+-- it wakes from DPMS off; with atomic commits the modeset after that reconnect
+-- often wedges ("Cannot commit when a page-flip is awaiting", aquamarine #240)
+-- and the panel stays on "no signal" until Hyprland restarts. Legacy KMS
+-- doesn't hit it. VRR is unavailable on these CRTCs anyway, so nothing is lost
+-- there. Only read at Hyprland startup -- log out and back in after changing it.
+hl.env("AQ_NO_ATOMIC", "1")
+
 hl.config({
     cursor = {
-        no_hardware_cursors = false,
+        no_hardware_cursors = true,   -- paired with AQ_NO_ATOMIC
     },
 })
 
@@ -22,7 +30,10 @@ hl.config({
 -- DP-2 at 240Hz, both at native 2560x1440. Both landscape. DP-3 is the main
 -- panel at the origin; DP-2 sits to its left, so it occupies the full 2560px
 -- of width starting at -2560.
-hl.monitor({ output = "DP-3", mode = "2560x1440@360", position = "0x0",     scale = 1 })
+-- DP-3 is held at 240Hz: it was dropped from 360Hz while chasing the DPMS wake
+-- bug above, which turned out not to depend on refresh rate. 360Hz is probably
+-- fine again with legacy KMS, but is untested.
+hl.monitor({ output = "DP-3", mode = "2560x1440@240", position = "0x0",     scale = 1 })
 hl.monitor({ output = "DP-2", mode = "2560x1440@240", position = "-2560x0", scale = 1 })
 
 hl.workspace_rule({ workspace = "2", monitor = "DP-3", default = true })
