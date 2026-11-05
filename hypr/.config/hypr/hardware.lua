@@ -1,37 +1,26 @@
 -- ~/.config/hypr/hardware.lua
--- Everything specific to this machine (europa) lives here. If a second
--- machine ever shows up, this is the only file that needs to differ.
+-- Everything specific to this machine (europa).
 --
--- europa: RTX 5070 Ti (Blackwell GB203), nvidia-open (open kernel modules),
---         DP-3 Microstep MPG271QX OLED (main, centre) + DP-2 ASUS VG27AQM1A
---         (left). Both 2560x1440, both landscape. DP-3 runs 360Hz, DP-2 240Hz.
+-- europa: RTX 5070 Ti (nvidia-open), DP-3 MSI MPG271QX OLED (main, 360Hz)
+--         + DP-2 ASUS VG27AQM1A (left, 240Hz). Both 2560x1440.
 
--- NVIDIA. Blackwell is open-kernel-module only, so there is no proprietary
--- variant to account for here.
 hl.env("LIBVA_DRIVER_NAME", "nvidia")
 hl.env("GBM_BACKEND", "nvidia-drm")
 hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
 
--- Legacy (non-atomic) KMS. The DP-3 OLED drops and reconnects its DP link when
--- it wakes from DPMS off; with atomic commits the modeset after that reconnect
--- often wedges ("Cannot commit when a page-flip is awaiting", aquamarine #240)
--- and the panel stays on "no signal" until Hyprland restarts. Legacy KMS
--- doesn't hit it. VRR is unavailable on these CRTCs anyway, so nothing is lost
--- there. Only read at Hyprland startup -- log out and back in after changing it.
+-- Legacy (non-atomic) KMS: with atomic commits the DP-3 OLED often stays on
+-- "no signal" after waking from DPMS (aquamarine #240). Read only at startup.
 hl.env("AQ_NO_ATOMIC", "1")
 
 hl.config({
     cursor = {
-        no_hardware_cursors = true,   -- paired with AQ_NO_ATOMIC
+        no_hardware_cursors = true,   -- required with AQ_NO_ATOMIC
     },
 })
 
--- Confirmed against `hyprctl monitors` availableModes: DP-3 tops out at 360Hz,
--- DP-2 at 240Hz, both at native 2560x1440. Both landscape. DP-3 is the main
--- panel at the origin; DP-2 sits to its left, so it occupies the full 2560px
--- of width starting at -2560.
 hl.monitor({ output = "DP-3", mode = "2560x1440@360", position = "0x0",     scale = 1 })
 hl.monitor({ output = "DP-2", mode = "2560x1440@240", position = "-2560x0", scale = 1 })
 
-hl.workspace_rule({ workspace = "2", monitor = "DP-3", default = true })
-hl.workspace_rule({ workspace = "1", monitor = "DP-2", default = true })
+hl.workspace_rule({ workspace = "2",  monitor = "DP-3", default = true })
+hl.workspace_rule({ workspace = "1",  monitor = "DP-2", default = true })
+hl.workspace_rule({ workspace = "10", monitor = "DP-3" })   -- games, see windowrules.lua
