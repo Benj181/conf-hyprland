@@ -1,55 +1,18 @@
 # /etc/greetd/config.toml
-# Installed by scripts/install-greeter.sh -- edit the copy in the repo
-# (greeter/etc/greetd/config.toml), not this file, or the next install
-# overwrites it.
+# Installed by scripts/install-greeter.sh -- edit greeter/etc/greetd/config.toml
+# in the repo, not this copy.
 #
-# WHY config.toml AND NOT greetd.conf
-#
-# nwg-hello's README suggests /etc/greetd/greetd.conf instead, because greetd
-# looks for it first and a package upgrade cannot clobber a file the package
-# does not own. The concern is real but the reasoning does not survive contact
-# with how pacman actually behaves:
-#
-#   - .pacnew is written on UPGRADE, when a file in the package's `backup`
-#     array has been modified locally and the new package ships a different
-#     version. Your file is KEPT; theirs lands beside it as config.toml.pacnew.
-#     That is better than dpkg's prompt -- nothing is interactive, and pacdiff
-#     tells you later.
-#   - .pacsave is written on REMOVAL (pacman -R), not on upgrade.
-#
-# So the greeter does not get silently replaced by agreety on an upgrade, and
-# the documented path -- the only one greetd's man page describes -- is safe.
-#
-# That whole story is conditional on config.toml actually being in greetd's
-# `backup` array. If it is not, pacman overwrites this file on every greetd
-# upgrade with no warning, which is presumably where the folklore came from.
-# install-greeter.sh asserts backup-array membership rather than trusting this
-# comment; if that assert ever fires, greetd.conf is the escape hatch.
+# Safe from upgrades because config.toml is in greetd's pacman backup array
+# (install-greeter.sh checks): pacman keeps local edits and writes a .pacnew.
+# If that ever changes, /etc/greetd/greetd.conf is the fallback.
 
 [terminal]
-# The VT here and greetd.service's `Conflicts=` must name the same tty, or
-# greetd and a getty fight over it. Arch ships greetd close to upstream, which
-# conflicts with getty@tty1.
-#
-# install-greeter.sh checks this pairing against the installed unit instead of
-# trusting the line above -- it cannot be verified anywhere but on the machine
-# itself, and guessing it wrong costs a black screen.
+# Must match the getty greetd.service conflicts with (checked by install-greeter.sh).
 vt = 1
 
 [default_session]
-# start-hyprland is Hyprland's own watchdog wrapper (/usr/bin/start-hyprland,
-# from the `hyprland` package). Everything after `--` is passed to Hyprland.
-#
-# The greeter compositor config is deliberately NOT ~/.config/hypr/hyprland.lua:
-# this runs as `greeter`, which cannot read /home/baas (mode 750). See
-# /etc/nwg-hello/hyprland.lua.
+# The greeter's compositor config; see /etc/nwg-hello/hyprland.lua.
 command = "/usr/bin/start-hyprland -- -c /etc/nwg-hello/hyprland.lua"
 
-# greetd creates this account from /usr/lib/sysusers.d/greetd.conf when the
-# package installs. nwg-hello's own source assumes this exact name -- main.py
-# and tools.py both gate on os.getenv("USER") == "greeter".
-#
-# sysusers does not necessarily add it to `video`, which it needs to open a DRM
-# device; without that you get a black screen at boot.
-# scripts/install-greeter.sh checks and fixes that.
+# Created by greetd's sysusers file; needs the `video` group (install-greeter.sh).
 user = "greeter"

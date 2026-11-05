@@ -1,10 +1,7 @@
 -- GENERATED from palettes/{{palette}}.env by scripts/theme.sh -- do not edit.
 -- Edit the palette and re-run the script.
 --
--- Colours are stored bare (no leading '#') because every field that consumes
--- them here wants them that way: hyprlang spells a colour rgba(rrggbbaa), and
--- the Lua config's integer colour fields want 0xAARRGGBB. The two helpers at
--- the bottom build both forms, so callers never concatenate hex by hand.
+-- Colours are bare rrggbb; use the helpers below to build config values.
 
 local C = {
     bg         = "{{bg_raw}}",

@@ -1,16 +1,7 @@
 # GENERATED from palettes/mono-warm.env by scripts/theme.sh -- do not edit.
 # Edit templates/btop.theme and re-run the script.
 #
-# btop is almost entirely gradients: every meter, graph and process row is a
-# three-stop ramp. A monochrome btop therefore cannot work the way the rest of
-# the rice does, where colour is dropped and brightness carries the meaning --
-# here brightness *is* the value being displayed, so the ramps have to stay
-# ramps. They run @muted -> @dim -> @text instead of hue-to-hue, which keeps
-# "more of the bar filled" readable while spending no colour on it.
-#
-# The exception is temperature, which is the one reading where the number
-# mattering is the whole point of looking: it keeps a grey -> warn -> urgent
-# ramp, on the same rule as the bar's memory states.
+# Gradients run @muted -> @dim -> @text; only temperature uses warn/urgent.
 
 # Main background, empty for terminal default, need to be empty if you want transparent background
 theme[main_bg]="#121110"
@@ -43,7 +34,6 @@ theme[meter_bg]="#1d1b19"
 theme[proc_misc]="#8c837a"
 
 # CPU, Memory, Network, Proc box outline colors
-# One grey, not four hues -- the labels already say which box is which.
 theme[cpu_box]="#322f2c"
 theme[mem_box]="#322f2c"
 theme[net_box]="#322f2c"

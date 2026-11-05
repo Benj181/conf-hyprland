@@ -1,11 +1,6 @@
 // ~/.config/rofi/powermenu.rasi
-// Theme for powermenu.sh. Shares the generated palette with config.rasi so the
-// power menu and the launcher match.
-//
-// Note this file must style every element state explicitly, for the same
-// reason config.rasi does: rofi loads its built-in default theme first, and
-// that theme sets `background: rgba(253,246,227)` (Solarized light) on
-// element normal.normal. Anything left unstyled renders cream on a dark theme.
+// Theme for powermenu.sh, using the same generated palette as config.rasi.
+// Style every element state explicitly (see config.rasi).
 
 @import "colors"
 
@@ -33,9 +28,7 @@ mainbox {
     spacing:  0;
 }
 
-// The prompt (user@host) acts as the title. The entry is hidden because this
-// is a pick-one menu, not a search: rofi still filters on keypress, and the
-// keybinds in powermenu.sh make single letters select directly.
+// The prompt (user@host) is the title; the entry is hidden (typing still filters).
 inputbar {
     children:     [ "prompt" ];
     padding:      10px 12px;
@@ -96,9 +89,6 @@ element selected.normal {
     text-color:       @accent;
 }
 
-// Shutdown and reboot are the urgent entries in powermenu.sh -- the one place
-// this menu is allowed colour, since "power off" and "lock" being visually
-// interchangeable is a real hazard at 2am.
 element selected.urgent {
     background-color: @urgent;
     text-color:       @bg;

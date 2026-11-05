@@ -1,15 +1,8 @@
 /* GENERATED from palettes/{{palette}}.env by scripts/theme.sh -- do not edit.
  * Edit templates/gtk4-colors.css and re-run the script.
  *
- * libadwaita deliberately ignores gtk-theme-name -- apps like Nautilus cannot
- * be themed by dropping in a GTK theme. The supported route is overriding its
- * named colours, which is what this does. Nothing is downloaded: recolouring
- * libadwaita directly needs no external theme, so there is nothing to go
- * stale (catppuccin/gtk, the obvious alternative, was archived in June 2024).
- *
- * accent_bg_color is @surface_hi rather than a hue. libadwaita paints it on
- * toggles, checked switches and selected rows, and it is the single largest
- * source of colour left in a GTK app once the window chrome is grey. */
+ * libadwaita ignores gtk-theme-name, so this overrides its named colours.
+ * accent is grey (@surface_hi), not a hue. */
 
 @define-color window_bg_color {{bg}};
 @define-color window_fg_color {{text}};

@@ -20,12 +20,9 @@ alias grep='grep --color=auto'
 alias leetcode="nvim leetcode.nvim"
 PROMPT='[%n@%m %1~]%# '
 
-# Fish-style suggestions as you type. #6c7086 (Catppuccin Mocha overlay0) is
-# the same muted grey kitty/mocha.conf uses for inactive/secondary UI, so the
-# ghost text reads as "not yet real" rather than a mismatched theme color.
+# Fish-style suggestions as you type, in a muted grey.
 source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#6c7086'
 
-# Must be sourced last: it wraps zle widgets, and anything sourced after it
-# is invisible to that wrapping.
+# Must be sourced last (it wraps zle widgets).
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh

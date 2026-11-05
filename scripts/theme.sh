@@ -3,12 +3,6 @@
 # Renders palettes/<name>.env through templates/ into the per-app colour files
 # that each stow package ships, then reloads whatever is running.
 #
-# The point of this script is that swapping a colour scheme is one edit and one
-# command rather than a pass over eight configs. Before it existed the same
-# hex value appeared in waybar/style.css, rofi, kitty, mako, hyprlock, both
-# gtk.css files, qt6ct and the greeter -- nine places to keep in sync by hand,
-# which in practice means they drift and the rice ends up half-retheme.
-#
 # Usage:
 #   ./scripts/theme.sh                 re-render the active palette
 #   ./scripts/theme.sh mono-neutral    switch to a palette and render it
@@ -16,10 +10,7 @@
 #   ./scripts/theme.sh --check         verify generated files are up to date
 #   ./scripts/theme.sh --no-reload     render only, do not touch running apps
 #
-# Generated files are committed to the repo on purpose. install.sh stows them
-# like any other config, so a fresh machine never has to run this first -- and
-# a palette change shows up in `git diff` as the rendered result, which is the
-# thing you actually review.
+# Generated files are committed, so a fresh install never needs to run this.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -72,8 +63,7 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
-# No palette named: reuse the last one. A bare `theme.sh` after editing a
-# palette file should re-render it, not silently jump back to a default.
+# No palette named: reuse the active one.
 if [[ -z "$PALETTE" ]]; then
     if [[ -f "$ACTIVE_FILE" ]]; then
         PALETTE="$(<"$ACTIVE_FILE")"
@@ -90,17 +80,9 @@ if [[ ! -f "$PALETTE_FILE" ]]; then
     exit 1
 fi
 
-# ---------------------------------------------------------------------------
-# Parse the palette.
-#
-# Parsed with a regex rather than sourced. Sourcing would be shorter, but it
-# gives no way to enumerate the keys that were defined (which is what drives
-# substitution below), it would happily accept a typo'd key as a new variable,
-# and it turns a colour file into executable code. Quotes are mandatory so the
-# trailing `# comment` on each line stays outside the captured value -- a
-# value starting with '#' means the usual "strip everything after #" trick
-# would eat the colour itself.
-# ---------------------------------------------------------------------------
+# Parse the palette with a regex rather than sourcing it, so keys can be
+# enumerated and the file is never executed. Values must be quoted so a
+# trailing `# comment` is not mistaken for part of a #rrggbb value.
 declare -A COLORS=()
 KEYS=()
 lineno=0
@@ -121,9 +103,7 @@ while IFS= read -r line || [[ -n "$line" ]]; do
     KEYS+=("$key")
 done < "$PALETTE_FILE"
 
-# Every template is written against this contract, so a palette missing a key
-# must fail here with the key's name rather than 40 lines later with an
-# unhelpful "unsubstituted placeholder" on whichever file happened to use it.
+# Keys every template may use.
 REQUIRED=(
     bg bg_alt surface surface_hi border muted dim text accent
     urgent warn good
@@ -140,15 +120,8 @@ if (( ${#missing[@]} )); then
     exit 1
 fi
 
-# ---------------------------------------------------------------------------
-# Build the substitution program.
-#
-# Three forms per key, because the file formats disagree about how a colour is
-# spelled: CSS and kitty want #rrggbb, hyprlang wants bare rrggbb inside
-# rgba(), and GTK's rgba() wants decimal components.
-#
-# '|' as the sed delimiter: colour values contain '#' and ',' but never '|'.
-# ---------------------------------------------------------------------------
+# Three forms per key: {{key}} = #rrggbb, {{key_raw}} = rrggbb (hyprlang
+# rgba()), {{key_rgb}} = "r, g, b" (GTK rgba()).
 SED_SCRIPT="$(mktemp)"
 trap 'rm -f "$SED_SCRIPT"' EXIT
 
@@ -164,23 +137,15 @@ for key in "${KEYS[@]}"; do
 done
 printf 's|{{palette}}|%s|g\n' "$PALETTE" >> "$SED_SCRIPT"
 
-# Longest pattern first, or the rule for `{{bg}}` fires against `{{bg_alt}}`
-# and leaves a stray `_alt}}` in the output -- and the placeholder check below
-# would not catch it, because the `{{` is gone. Sorting on the length of the
-# pattern field specifically, not the whole line: a line's total length also
-# depends on its value, which has nothing to do with which rule must win.
+# Longest pattern first, so {{bg}} cannot match inside {{bg_alt}}. Sort on the
+# pattern field's length, not the whole line.
 sort_tmp="$(mktemp)"
 awk -F'|' '{ print length($2) "\t" $0 }' "$SED_SCRIPT" \
     | sort -rn -k1,1 | cut -f2- > "$sort_tmp"
 mv "$sort_tmp" "$SED_SCRIPT"
 
-# ---------------------------------------------------------------------------
 # Manifest: template -> destination, relative to the repo root.
-#
-# GTK3 and GTK4 get separate templates rather than one shared file: they use
-# different @define-color names entirely (theme_bg_color vs window_bg_color),
-# and libadwaita ignores the GTK3 names.
-# ---------------------------------------------------------------------------
+# GTK3 and GTK4 use different @define-color names, hence two templates.
 MANIFEST=(
     "waybar-colors.css|waybar/.config/waybar/colors.css"
     "rofi-colors.rasi|rofi/.config/rofi/colors.rasi"
@@ -214,11 +179,7 @@ for entry in "${MANIFEST[@]}"; do
     out="$(mktemp)"
     sed -f "$SED_SCRIPT" "$src" > "$out"
 
-    # An unsubstituted placeholder means a template asked for a key the
-    # palette does not define. Writing the file anyway would ship a literal
-    # "{{foo}}" into a config -- which waybar and rofi parse as a syntax
-    # error, and which mako and hyprlock silently ignore, giving you a lock
-    # screen with one invisible element and no clue why.
+    # A leftover {{placeholder}} means the palette lacks a key the template uses.
     if grep -q '{{' "$out"; then
         echo "Unsubstituted placeholders in ${entry%%|*}:" >&2
         grep -o '{{[a-zA-Z0-9_]*}}' "$out" | sort -u | sed 's/^/    /' >&2
@@ -238,13 +199,9 @@ for entry in "${MANIFEST[@]}"; do
     fi
 
     mkdir -p "$(dirname "$dst")"
-    # mv, not cp: these destinations are stow targets, and a partial write to
-    # hyprlock.conf is a lock screen that will not come up.
+    # mv for an atomic replace; chmod because mktemp files are 0600 and the
+    # greeter files must be readable by the `greeter` user.
     mv "$out" "$dst"
-    # mktemp creates at 0600, which survives the mv and leaves generated
-    # configs unreadable by anyone but the owner -- fine for waybar, wrong for
-    # greeter/nwg-hello.css, which install-greeter.sh copies out for the
-    # `greeter` system user to read.
     chmod 644 "$dst"
     echo "    ${entry##*|}"
     changed=$((changed + 1))
@@ -261,9 +218,7 @@ if (( CHECK )); then
     exit 0
 fi
 
-# The wallpaper is palette-driven too, so switching schemes does not leave a
-# Catppuccin-purple gradient behind the new grey bar. Separate script because
-# it writes a PNG rather than text; see scripts/make-wallpaper.py.
+# The wallpaper is generated from the palette too.
 if command -v python3 >/dev/null 2>&1 && [[ -f "$REPO/scripts/make-wallpaper.py" ]]; then
     python3 "$REPO/scripts/make-wallpaper.py" "$PALETTE_FILE" "$REPO/wallpapers"
 fi
@@ -271,10 +226,7 @@ fi
 (( changed == 0 )) && echo "    no changes"
 printf '%s\n' "$PALETTE" > "$ACTIVE_FILE"
 
-# ---------------------------------------------------------------------------
-# Reload. Every step is best-effort: this script has to work over SSH, from a
-# TTY, and mid-install, none of which have a compositor running.
-# ---------------------------------------------------------------------------
+# Reload running apps. Best-effort: there may be no compositor (SSH, TTY, install).
 if (( RELOAD == 0 )); then
     echo "==> Skipping reload (--no-reload)"
     exit 0
@@ -291,8 +243,7 @@ if hyprctl reload >/dev/null 2>&1; then
     echo "    hyprland"
 fi
 
-# SIGUSR2 is waybar's reload signal. It re-reads both config and style.css,
-# which SIGUSR1 (toggle visibility) does not.
+# SIGUSR2 reloads waybar's config and style (SIGUSR1 only toggles visibility).
 if pkill -SIGUSR2 waybar 2>/dev/null; then
     echo "    waybar"
 fi
@@ -301,14 +252,8 @@ if command -v makoctl >/dev/null 2>&1 && makoctl reload >/dev/null 2>&1; then
     echo "    mako"
 fi
 
-# kitty.conf sets allow_remote_control + listen_on unix:@kitty, so already-open
-# terminals can be recoloured without restarting them.
-#
-# One socket per instance, and the name is NOT the one in kitty.conf: kitty
-# appends its pid, so `listen_on unix:@kitty` listens on @kitty-<pid>. Targeting
-# the configured name verbatim gets "connection refused" every time -- and
-# since this whole block is best-effort, that failure is silent and you are left
-# wondering why only the terminal did not follow the palette. Hence the loop.
+# Recolour open kitty windows over remote control. kitty appends its pid to
+# the socket name, so `listen_on unix:@kitty` means @kitty-<pid>.
 if command -v kitten >/dev/null 2>&1; then
     kitty_done=0
     for pid in $(pgrep -x kitty 2>/dev/null || true); do
@@ -320,21 +265,11 @@ if command -v kitten >/dev/null 2>&1; then
     (( kitty_done )) && echo "    kitty ($kitty_done instance(s))"
 fi
 
-# Restarted rather than signalled. hyprpaper 0.8.4 has no bare `reload`
-# request -- `hyprctl hyprpaper reload` answers "invalid hyprpaper request" --
-# and the per-monitor `wallpaper MONITOR,path` form would mean this script
-# enumerating monitors and duplicating what hyprpaper.conf already says. A
-# restart re-reads the config, which is the file that just changed.
+# hyprpaper has no reload request, so restart it to re-read hyprpaper.conf.
 if pgrep -x hyprpaper >/dev/null 2>&1; then
     pkill -x hyprpaper || true
-    # Launched through the compositor so it inherits the session's Wayland
-    # environment rather than this script's.
-    #
-    # The Lua-quoted form is required, not stylistic. With hyprland.lua in
-    # place hyprctl feeds the dispatch argument straight into Lua, so the
-    # familiar `hyprctl dispatch exec hyprpaper` is evaluated as
-    # `hl.dispatch(exec hyprpaper)` and dies on a syntax error -- which, being
-    # sent to /dev/null here, would show up only as a missing wallpaper.
+    # Launched through the compositor so it gets the session's environment.
+    # With the Lua config, dispatch arguments are Lua: `dispatch exec ...` fails.
     hyprctl dispatch 'hl.dsp.exec_cmd("hyprpaper")' >/dev/null 2>&1 || true
     echo "    hyprpaper"
 fi

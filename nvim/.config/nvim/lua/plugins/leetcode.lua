@@ -53,16 +53,8 @@ return {
   lazy = vim.fn.argv(0, -1) ~= "leetcode.nvim",
   build = function() vim.cmd "TSInstall html" end,
   dependencies = { "MunifTanjim/nui.nvim", "nvim-lua/plenary.nvim" },
-  -- capital `L` group: lowercase `<Leader>l` is AstroNvim's LSP group
-  -- (`<Leader>lr` is already bound to LSP rename on Rust buffers)
-  --
-  -- Covers every active top-level `:Leet` subcommand (see
-  -- leetcode.nvim's lua/leetcode/command/init.lua:601 `cmd.commands`)
-  -- except: `test`/`hints` (pure aliases of run/info), the commented-out
-  -- `session` subtree (inactive in the plugin itself), and `cookie`/
-  -- `cache`/`fix` (account sign-in and cache-wipe admin actions -- `fix`
-  -- specifically deletes the local cache and quits Neovim, not something
-  -- to bind to a key you might fat-finger).
+  -- Capital `L`: `<Leader>l` is AstroNvim's LSP group. `:Leet fix` (wipes
+  -- the cache and quits) and the cookie/cache commands are deliberately unbound.
   keys = {
     -- solving a question
     { "<leader>Lr", "<cmd>Leet run<cr>", desc = "Run tests" },

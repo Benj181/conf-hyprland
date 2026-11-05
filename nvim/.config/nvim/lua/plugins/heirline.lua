@@ -1,8 +1,5 @@
--- The buffer names normally live in the tabline, which astrocore.lua turns off
--- (showtabline = 0). AstroNvim's default statusline file_info only shows the
--- filetype, so with the tabline gone nothing said which file was open. Swap
--- that component for one showing the path (relative to cwd, ~ for home) plus
--- the modified / read-only markers.
+-- Show the file path (relative to cwd) and modified/read-only markers in the
+-- statusline, since the tabline is off (astrocore.lua).
 
 ---@type LazySpec
 return {

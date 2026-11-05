@@ -43,7 +43,7 @@ return {
         spell = false,
         signcolumn = "yes",
         wrap = false,
-        showtabline = 0, -- never show; was in polish.lua, which never ran
+        showtabline = 0, -- file path is in the statusline (heirline.lua)
         shell = "/usr/bin/zsh",    -- matches the login shell set with chsh
         shellcmdflag = "-c",
         shellquote = "",

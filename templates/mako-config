@@ -1,10 +1,6 @@
 # GENERATED from palettes/{{palette}}.env by scripts/theme.sh -- do not edit.
 # Edit templates/mako-config and re-run the script.
-#
-# The whole file is generated, not just the colours: mako's config format has
-# no include or import directive, so there is nowhere to put a separate
-# palette file. Anything you want to change about notifications belongs in the
-# template.
+# mako has no include, so the whole file is generated: edit the template.
 
 background-color={{bg}}ee
 text-color={{text}}
@@ -20,8 +16,6 @@ layer=overlay
 anchor=top-right
 font=FiraCode Nerd Font 11
 
-# 1px and square to match the window borders and the bar. mako's default 10px
-# radius is the same floating-pill language the rest of this retheme drops.
 
 [urgency=low]
 text-color={{dim}}
@@ -30,9 +24,7 @@ border-color={{border}}
 [urgency=normal]
 border-color={{border}}
 
-# The one place a notification is allowed colour, on the same rule as the bar:
-# a critical notification that looks like every other notification is not
-# doing its job.
+# Only critical notifications get colour.
 [urgency=high]
 border-color={{urgent}}
 text-color={{text}}

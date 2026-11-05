@@ -2,10 +2,6 @@
 # scripts/install-zsh.sh
 # Makes zsh the login shell. Idempotent: a no-op once it already is.
 #
-# Arch's zsh package adds /usr/bin/zsh to /etc/shells itself (zsh.install),
-# so chsh needs no extra setup here -- just the package, which packages.sh
-# already installed.
-#
 # Usage: install-zsh.sh [dry_run:0|1]
 
 set -euo pipefail
@@ -14,9 +10,7 @@ DRY_RUN="${1:-0}"
 
 ZSH_PATH="$(command -v zsh || true)"
 if [ -z "$ZSH_PATH" ]; then
-    # A dry run on a machine that has not been set up yet is the normal case
-    # (see packages.sh, install-keyring.sh): report and keep going rather than
-    # failing the whole install.sh run, which runs under set -e.
+    # In a dry run, report and continue.
     if [ "$DRY_RUN" -eq 1 ]; then
         echo "    note: zsh not installed yet (packages.sh adds it); skipping chsh check"
         exit 0

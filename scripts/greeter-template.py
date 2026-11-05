@@ -1,42 +1,18 @@
 #!/usr/bin/env python3
 """Centre nwg-hello's login form, hyprlock-style.
 
-nwg-hello inherits the Sugar Candy SDDM layout: `main-box` is a horizontal
-GtkBox, and the stock template packs `form-wrapper` into it with
-expand=False, fill=False. So form-wrapper only ever gets its natural width and
-sits in a column against the left edge, with the wallpaper filling the rest.
-hyprlock centres its clock, date and input field, so to match it the form has
-to move to the middle.
+The stock template packs `form-wrapper` into the horizontal `main-box` with
+expand=False, fill=False, so the form sits against the left edge. GtkBox
+packing has no CSS equivalent, so this writes a replacement template for
+nwg-hello.json's "template-name".
 
-This cannot be done in CSS: GtkBox distributes space using GtkBuilder
-<packing> properties, and those have no CSS equivalent. nwg-hello's supported
-escape hatch is `"template-name"` in nwg-hello.json, which points at a
-replacement .glade in /etc/nwg-hello/.
+The template is derived from the installed template.glade at install time
+rather than vendored: ui.py looks up widgets by id, and a stale copy missing
+one would crash the greeter. Only form-wrapper's <packing> is changed; the
+inner column is already halign=center and vertically centred.
 
-The obvious way to use that hook is to vendor an edited copy of
-template.glade into the repo. This script exists instead because vendoring is
-a bad trade here: ui.py calls builder.get_object("lbl-clock") and friends on
-whatever template it is handed, so a stale copy missing a widget added by a
-later nwg-hello returns None and the greeter dies on startup -- and a greeter
-that dies on startup means being unable to log in. Deriving the template from
-the installed one at install time keeps it in step with whatever version apt
-put on disk, and the one edit below is all this repo actually owns.
-
-If the expected nodes are not found this exits non-zero and writes nothing;
-install-greeter.sh then leaves "template-name" empty and the greeter falls
-back to the stock left-aligned layout. Ugly beats unbootable.
-
-Only the <packing> is touched, and that is deliberate -- it is the whole fix.
-Two things that look like they should also be needed are not:
-
-  - halign/hexpand on form-wrapper: unnecessary, and they do not even apply.
-    Measured at runtime, form-wrapper reports halign=fill with these set. The
-    inner width-request=400 column already carries halign=center, so once
-    form-wrapper is given the full width the column centres itself.
-  - valign on anything: the form is already vertically centred. Measured, the
-    inner box lands at y=304 h=831 on a 1440px screen -- 304px of slack above
-    and 305 below. It only reads as top-heavy because the clock carries the
-    visual weight.
+If the expected nodes are missing this exits non-zero and writes nothing, and
+install-greeter.sh falls back to the stock layout.
 
 Usage: greeter-template.py <input.glade> <output.glade>
 """

@@ -21,22 +21,14 @@ import sys
 import zlib
 from pathlib import Path
 
-# Half the 2560x1440 the monitors actually run at (see hardware.lua).
-# hyprpaper's fit_mode = cover and the greeter's background-size: cover both
-# scale to fit regardless, and a gradient this smooth upscales without a
-# visible artefact -- while rendering at native resolution would mean 11M
-# per-pixel operations in pure Python per image, which is the difference
-# between this script taking under a second and taking most of a minute.
-#
-# The portrait variant is kept because the repo has always shipped one, even
-# though neither display is rotated at the moment.
+# Half resolution: both consumers scale to cover, the smooth gradient upscales
+# cleanly, and pure-Python rendering at native size is very slow.
 SIZES = {"landscape": (1280, 720), "portrait": (720, 1280)}
 
 KV = re.compile(r'^([a-zA-Z_][a-zA-Z0-9_]*)="([^"]*)"')
 
-# 8x8 Bayer matrix, normalised to (-0.5, +0.5). Ordered rather than random
-# dither on purpose: it is deterministic, so re-running the script byte-for-byte
-# reproduces the same PNG and a palette that has not changed shows no diff.
+# 8x8 Bayer matrix, normalised to (-0.5, +0.5). Ordered dither is
+# deterministic, so an unchanged palette produces an identical PNG.
 _BAYER_8 = [
     [0, 32, 8, 40, 2, 34, 10, 42],
     [48, 16, 56, 24, 50, 18, 58, 26],
@@ -79,8 +71,6 @@ def render(width: int, height: int, dark: tuple, light: tuple) -> bytes:
     dead pixel field and not enough to notice as a gradient.
     """
     cx, cy = width * 0.5, height * 0.38
-    # Normalising by the distance to the furthest corner keeps the falloff
-    # identical in shape whether the image is landscape or portrait.
     max_d = math.hypot(max(cx, width - cx), max(cy, height - cy))
 
     dx2 = [(x - cx) ** 2 for x in range(width)]
@@ -99,12 +89,7 @@ def render(width: int, height: int, dark: tuple, light: tuple) -> bytes:
             # Squared falloff: keeps the lighter area small and the edges
             # settled at the base colour rather than tinting the whole frame.
             t = min(1.0, t) ** 2
-            # Ordered dither, applied before rounding. Without it the image
-            # bands into visible concentric rings: the two endpoints are only
-            # ~22 RGB steps apart spread over 1280px, so each 8-bit step covers
-            # a wide band of the gradient and the eye reads the boundaries as
-            # contour lines. A sub-1-LSB jitter breaks them into noise instead,
-            # which at this amplitude is invisible on its own.
+            # Dither before rounding, or the gradient bands into rings.
             j = brow[x & 7]
             rows.append(clamp(lr + (dr - lr) * t + j))
             rows.append(clamp(lg + (dg - lg) * t + j))

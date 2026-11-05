@@ -2,10 +2,6 @@
     "layer": "top",
     "position": "top",
 
-    // 30px, down from 44. The bar no longer floats, so it does not need to
-    // look like an object -- it needs to give the screen back. Margins and
-    // inter-section spacing are gone for the same reason; separation between
-    // modules is padding in style.css, which costs no vertical space.
     "height": 30,
     "spacing": 0,
 
@@ -28,10 +24,6 @@
     ],
 
     "hyprland/workspaces": {
-        // "{name}", not "{icon}". With no format-icons table defined, {icon}
-        // has nothing to look up -- and plain numbers are the right call here
-        // anyway: a row of glyphs is exactly the decoration this retheme is
-        // removing.
         "format": "{name}",
         "on-click": "activate"
     },
@@ -41,9 +33,6 @@
         "tooltip-format": "<tt><small>{calendar}</small></tt>"
     },
 
-    // Single-space separators throughout, down from double. At 12px on a 30px
-    // bar the wider gap read as a gap between modules rather than between an
-    // icon and its value.
     "cpu": {
         "interval": 5,
         "format": "󰍛 {usage}%",

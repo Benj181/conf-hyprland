@@ -3,8 +3,8 @@
 # The only command needed to set this machine up. Installs packages, themes
 # and the login screen, then symlinks every config into place with GNU Stow.
 #
-# This targets one machine (europa, Arch Linux) on purpose -- there is no
-# hardware detection and no per-host profile. See hypr/.config/hypr/hardware.conf.
+# Targets one machine (europa, Arch Linux); no hardware detection.
+# Machine-specific settings: hypr/.config/hypr/hardware.lua.
 #
 # Usage:
 #   ./install.sh                  everything
@@ -39,10 +39,7 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
     echo "=== DRY RUN: nothing will be written ==="
 fi
 
-# stow comes from packages.sh, which a dry run skips -- so on a fresh machine,
-# demanding it up front made `--dry-run` fail on the one box it exists to
-# check. A preflight you cannot run before installing anything is not a
-# preflight. Report and continue; the real run still hard-fails.
+# A dry run skips packages.sh, so stow may not be installed yet.
 if ! command -v stow >/dev/null; then
     if [[ "$DRY_RUN" -eq 1 ]]; then
         echo "    note: stow not installed yet (scripts/packages.sh adds it);"
@@ -61,17 +58,14 @@ fi
 
 if [[ "$SKIP_PACKAGES" -eq 0 && "$DRY_RUN" -eq 0 ]]; then
     ./scripts/packages.sh
-    # After packages.sh: makepkg needs base-devel, and `makepkg -s` resolves
-    # build deps against the databases that script just refreshed with -Syu.
+    # Needs base-devel and the databases packages.sh just refreshed.
     ./scripts/install-aur.sh 0
 else
     echo "==> Skipping packages"
 fi
 
-# Colours, before stow. The generated files are committed, so this is normally
-# a no-op -- but it is what catches a palette edited without re-running
-# theme.sh, which would otherwise install a repo whose configs disagree with
-# palettes/.active. --no-reload because nothing is running yet on a fresh box.
+# Usually a no-op (generated files are committed); catches a palette edited
+# without re-running theme.sh.
 if [[ "$DRY_RUN" -eq 1 ]]; then
     ./scripts/theme.sh --check
 else
@@ -85,10 +79,7 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
     if command -v stow >/dev/null; then
         stow -n -v -t "$HOME" "${PACKAGES[@]}" 2>&1 | sed 's/^/    /'
     fi
-    # Worth running even though nothing is written: install-aur.sh and
-    # install-greeter.sh do their checking with reads (pacman -Qq, systemctl
-    # show, grep on nwg-hello's ui.py), so a dry run is a real preflight for
-    # the two steps most likely to surprise you -- not just a stow rehearsal.
+    # These scripts' checks are read-only, so a dry run still runs them.
     ./scripts/install-aur.sh 1
     ./scripts/install-keyring.sh 1
     ./scripts/install-zsh.sh 1
@@ -102,10 +93,7 @@ stow -v -t "$HOME" "${PACKAGES[@]}" 2>&1 | sed 's/^/    /'
 
 if [[ "$SKIP_PACKAGES" -eq 0 ]]; then
     ./scripts/install-themes.sh
-    # Edits /etc/pam.d/{greetd,login} in place rather than stowing anything:
-    # both files belong to packages, and pacman keeps local edits to them.
     ./scripts/install-keyring.sh 0
-    # Not a stow package: the greeter runs as `greeter`, which cannot read $HOME.
     if [[ "$SKIP_GREETER" -eq 0 ]]; then
         ./scripts/install-greeter.sh "$DOTFILES_DIR" 0
     else

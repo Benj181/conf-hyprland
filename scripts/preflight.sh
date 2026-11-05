@@ -1,14 +1,8 @@
 #!/usr/bin/env bash
 # scripts/preflight.sh
 # Moves anything that would collide with stow out of the way.
-#
-# stow refuses to overwrite existing files and reports it in a way that is hard
-# to act on. Typical collisions are a pre-existing ~/.config/nvim directory from
-# an earlier setup, or a hand-made ~/.config/kitty/kitty.conf symlink.
-#
-# Deliberately not `stow --adopt`: adopt pulls stray files *into* the repo and
-# overwrites the committed versions with them. That is the opposite of what is
-# wanted here -- the stray kitty.conf symlink is exactly what we're removing.
+# Not `stow --adopt`: that would pull stray files into the repo, overwriting
+# the committed versions.
 #
 # Usage: preflight.sh <dotfiles_dir> <dry_run:0|1> <package>...
 
@@ -30,18 +24,8 @@ for pkg in "${PACKAGES[@]}"; do
         # Nothing there: no conflict.
         [ -e "$target" ] || [ -L "$target" ] || continue
 
-        # Already one of ours -- stow will handle it. Resolve the *whole* path
-        # and compare, with no symlink precondition.
-        #
-        # This previously guarded the check with `[ -L "$target" ] || [ -L
-        # "$(dirname "$target")" ]`, which only noticed a symlink at the
-        # immediate parent. When stow folds a package into a single directory
-        # symlink (~/.config/nvim -> repo), files directly inside it were
-        # correctly skipped, but anything one level deeper (lua/plugins/*.lua)
-        # has a real directory as its parent and slipped through -- so this
-        # script moved files *through* the symlink and out of the repo.
-        # readlink -f resolves every component, so an ancestor symlink at any
-        # depth is caught.
+        # Already ours. readlink -f resolves every path component, so files
+        # under a folded directory symlink (~/.config/nvim -> repo) count too.
         resolved="$(readlink -f "$target" 2>/dev/null || true)"
         case "$resolved" in
             "$DOTFILES_DIR"/*) continue ;;

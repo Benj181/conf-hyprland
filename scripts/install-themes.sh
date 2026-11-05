@@ -1,13 +1,8 @@
 #!/usr/bin/env bash
 # scripts/install-themes.sh
 # Applies the GTK/Qt appearance settings that live outside dotfiles.
-#
-# This deliberately downloads nothing. catppuccin/gtk was archived in June
-# 2024, so pinning a release of it would build on an unmaintained dependency --
-# and it would not help with the app that matters most here anyway: Nautilus
-# links libadwaita, which ignores gtk-theme-name outright. The colours are
-# applied by the `theme` stow package (gtk-3.0/gtk.css, gtk-4.0/gtk.css,
-# qt6ct), so all that is left is the settings GTK reads from dconf.
+# Colours come from the `theme` stow package (gtk.css, qt6ct); this only sets
+# the dconf keys GTK reads.
 
 set -euo pipefail
 
@@ -18,24 +13,9 @@ fi
 
 echo "==> Applying GTK interface settings"
 
-# ---------------------------------------------------------------------------
-# The schema has to exist before any of this means anything.
-#
-# set_key below reports "skipped (not writable)" and carries on, which is the
-# right response to one unwritable key and the wrong response to the schema not
-# being installed at all: every key would skip and the install would finish
-# green with no dark mode anywhere. gsettings-desktop-schemas is only
-# likely-transitive on Arch, so scripts/packages.sh names it outright and this
-# refuses to pretend otherwise.
-#
-# dconf matters just as much and fails worse: without it gsettings writes to
-# the memory backend, every key reports success, and the values evaporate at
-# logout. `gsettings writable` returns true either way, so it cannot catch that
-# -- naming dconf in packages.sh is the actual fix.
-#
-# Here-string, not a pipe: `gsettings list-schemas | grep -q` under pipefail
-# returns 141 when it matches.
-# ---------------------------------------------------------------------------
+# Without the schema every key below would just "skip". (Without dconf, values
+# silently don't persist; packages.sh installs it.)
+# Here-string, not a pipe: `... | grep -q` under pipefail returns 141 on a match.
 schemas="$(gsettings list-schemas 2>/dev/null || true)"
 if ! grep -Fxq org.gnome.desktop.interface <<<"$schemas"; then
     echo "==> org.gnome.desktop.interface schema is missing." >&2
@@ -44,12 +24,7 @@ if ! grep -Fxq org.gnome.desktop.interface <<<"$schemas"; then
     exit 1
 fi
 
-# These are org.gnome.desktop.interface keys, which GTK apps read via
-# xdg-desktop-portal regardless of desktop environment -- unlike
-# org.gnome.desktop.wm.preferences, which only Mutter reads and which does
-# nothing under Hyprland. The portal is why xdg-desktop-portal-hyprland and
-# xdg-desktop-portal-gtk are in packages.sh: on Arch they are optdepends, so
-# unnamed they are absent and this mechanism does not exist.
+# GTK apps read these via xdg-desktop-portal.
 set_key() {
     local key="$1" val="$2"
     if gsettings writable org.gnome.desktop.interface "$key" >/dev/null 2>&1; then
@@ -60,7 +35,7 @@ set_key() {
     fi
 }
 
-# prefer-dark is what actually puts libadwaita apps into dark mode.
+# prefer-dark is what puts libadwaita apps into dark mode.
 set_key color-scheme "prefer-dark"
 set_key gtk-theme "Adwaita-dark"
 set_key icon-theme "Papirus-Dark"
