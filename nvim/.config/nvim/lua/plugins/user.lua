@@ -21,6 +21,78 @@ return {
     priority = 1000,
   },
 
+  -- Coloured themes on the palette's background (list in lua/themes.lua).
+  -- GitHub derives its bg* specs by blending against its stock canvas, so
+  -- both the canvas and the specs are pinned.
+  {
+    "projekt0n/github-nvim-theme",
+    name = "github-theme",
+    lazy = false,
+    priority = 1000,
+    config = function()
+      local p = require "palette"
+      require("github-theme").setup {
+        palettes = {
+          all = {
+            canvas = { default = p.bg, overlay = p.bg_alt, inset = p.bg_alt, subtle = p.surface },
+          },
+        },
+        specs = {
+          all = {
+            bg0 = p.bg_alt,
+            bg1 = p.bg,
+            bg2 = p.surface,
+            bg3 = p.bg_alt,
+            sel1 = p.surface_hi,
+          },
+        },
+      }
+    end,
+  },
+
+  -- on_colors runs after the derived bg_* colours, so each is set.
+  {
+    "folke/tokyonight.nvim",
+    lazy = false,
+    priority = 1000,
+    config = function()
+      local p = require "palette"
+      require("tokyonight").setup {
+        on_colors = function(c)
+          c.bg = p.bg
+          c.bg_dark = p.bg_alt
+          c.bg_dark1 = p.bg_alt
+          c.bg_float = p.bg_alt
+          c.bg_popup = p.bg_alt
+          c.bg_sidebar = p.bg
+          c.bg_statusline = p.bg_alt
+          c.bg_highlight = p.bg_alt
+          c.bg_visual = p.surface_hi
+        end,
+      }
+    end,
+  },
+
+  -- Merged over the stock palette before the scheme is derived.
+  {
+    "loctvl842/monokai-pro.nvim",
+    lazy = false,
+    priority = 1000,
+    config = function()
+      local p = require "palette"
+      require("monokai-pro").setup {
+        override_palette = function()
+          return {
+            background = p.bg,
+            dark1 = p.bg_alt,
+            dark2 = p.bg_alt,
+            dimmed5 = p.surface_hi,
+          }
+        end,
+      }
+    end,
+  },
+
 
   -- == Examples of Overriding Plugins ==
 

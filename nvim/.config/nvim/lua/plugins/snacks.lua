@@ -7,6 +7,17 @@ return {
   ---@type snacks.Config
   opts = {
     picker = {
+      -- <Leader>ft only lists the themes in lua/themes.lua.
+      sources = {
+        colorschemes = {
+          transform = function(item)
+            for _, theme in ipairs(require "themes") do
+              if theme.name == item.text then return true end
+            end
+            return false
+          end,
+        },
+      },
       icons = {
         ui = {
           selected = " ",
