@@ -42,6 +42,17 @@ return {
     },
     -- customize language server configuration passed to `vim.lsp.config`
     -- client specific configuration can also go in `lsp/` in your configuration root (see `:h lsp-config`)
+    config = {
+      rust_analyzer = {
+        settings = {
+          ["rust-analyzer"] = {
+            rustfmt = {
+              overrideCommand = { vim.fn.expand("~/.cargo/bin/leptosfmt"), "--stdin", "--rustfmt" },
+            },
+          },
+        },
+      },
+    },
 
     -- customize how language servers are attached
     handlers = {
