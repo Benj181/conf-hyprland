@@ -16,6 +16,9 @@ hl.config({
     cursor = {
         no_hardware_cursors = true,   -- required with AQ_NO_ATOMIC
     },
+    render = {
+        cm_auto_hdr = 0,
+    },
 })
 
 hl.monitor({ output = "DP-3", mode = "2560x1440@360", position = "0x0",     scale = 1 })
