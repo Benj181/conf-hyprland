@@ -16,7 +16,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 DOTFILES_DIR="$(pwd)"
 
-PACKAGES=(hypr waybar rofi mako kitty btop nvim hyprlock hypridle theme zsh)
+PACKAGES=(hypr waybar rofi mako kitty btop nvim hyprlock hypridle theme zsh xkb)
 
 SKIP_PACKAGES=0
 SKIP_GREETER=0

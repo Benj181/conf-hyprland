@@ -1,0 +1,49 @@
+// Norwegian layout with a symbol layer on XKB level 5.
+// The key that selects level 5 is set by kb_options in
+// hypr/.config/hypr/general.lua (lv5:lsgt_switch, the < > key).
+// Levels 1-4 (plain, Shift, AltGr, Shift+AltGr) come from "no" unchanged;
+// NoSymbol leaves those levels as they are.
+
+default partial alphanumeric_keys
+xkb_symbols "basic" {
+    include "no(basic)"
+
+    name[Group1] = "Norwegian (symbol layer)";
+
+    // Top row
+    key <AD01> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, grave,       grave       ] };
+    key <AD02> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, asciitilde,  asciitilde  ] };
+    key <AD03> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, asciicircum, asciicircum ] };
+    key <AD04> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, bar,         bar         ] };
+    key <AD05> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, percent,     percent     ] };
+    key <AD06> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, ampersand,   ampersand   ] };
+    key <AD07> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, backslash,   backslash   ] };
+    key <AD08> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, slash,       slash       ] };
+    key <AD09> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, asterisk,    asterisk    ] };
+    key <AD10> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, at,          at          ] };
+    key <AD11> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, dollar,      dollar      ] };
+
+    // Home row: bracket pairs mirrored, opening on the left hand
+    key <AC01> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, less,         less         ] };
+    key <AC02> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, bracketleft,  bracketleft  ] };
+    key <AC03> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, parenleft,    parenleft    ] };
+    key <AC04> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, braceleft,    braceleft    ] };
+    key <AC05> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, equal,        equal        ] };
+    key <AC06> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, numbersign,   numbersign   ] };
+    key <AC07> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, braceright,   braceright   ] };
+    key <AC08> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, parenright,   parenright   ] };
+    key <AC09> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, bracketright, bracketright ] };
+    key <AC10> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, greater,      greater      ] };
+    key <AC11> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, semicolon,    semicolon    ] };
+
+    // Bottom row
+    key <AB01> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, exclam,     exclam     ] };
+    key <AB02> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, quotedbl,   quotedbl   ] };
+    key <AB03> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, apostrophe, apostrophe ] };
+    key <AB04> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, plus,       plus       ] };
+    key <AB05> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, underscore, underscore ] };
+    key <AB06> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, question,   question   ] };
+    key <AB07> { type[Group1] = "EIGHT_LEVEL_SEMIALPHABETIC", [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, colon,      colon      ] };
+    key <AB08> { type[Group1] = "EIGHT_LEVEL",                [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, EuroSign,   EuroSign   ] };
+    key <AB09> { type[Group1] = "EIGHT_LEVEL",                [ NoSymbol, NoSymbol, NoSymbol, NoSymbol, ellipsis,   ellipsis   ] };
+};

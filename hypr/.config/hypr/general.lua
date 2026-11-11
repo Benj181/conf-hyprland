@@ -43,7 +43,9 @@ hl.config({
     },
 
     input = {
-        kb_layout    = "no",
+        -- Norwegian plus a symbol layer on the < > key; see xkb/README.md.
+        kb_layout    = "nosym",
+        kb_options   = "lv5:lsgt_switch",
         follow_mouse = 1,
 
         accel_profile = "flat",   -- no acceleration

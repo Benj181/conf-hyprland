@@ -191,7 +191,7 @@ where it would go stale out of sight.
 
 ```bash
 cd ~/hyprland-dotfiles
-stow -D -t "$HOME" hypr waybar rofi mako kitty btop nvim hyprlock hypridle theme zsh
+stow -D -t "$HOME" hypr waybar rofi mako kitty btop nvim hyprlock hypridle theme zsh xkb
 ```
 
 The greeter isn't a stow package, so undo it separately — **before** you reboot,
